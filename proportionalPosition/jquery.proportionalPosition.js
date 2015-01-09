@@ -47,7 +47,7 @@ propoIgnoreH (propoElement/propoScaled) - Marks propoElement to ignore css left/
 
 propoIgnoreV (propoElement/propoScaled) - Marks propoElement to ignore css top/bottom values
 
-propoIgnoreLineHeight (propoText) - Marks propoText to ignore css line-height scaling
+propoIgnoreLineHeight (propoText) - Marks propoText to ignore css line-height scaling (scales by default)
 
 <<< SETUP >>>
 
