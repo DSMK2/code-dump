@@ -38,6 +38,7 @@ propoText - Mark element for font-size/line-height scaling, font-sizes scale to 
 	line-height
 
 [Modifier classes]
+NOTE: Include along with the main propo- classes
 
 propoFixed (propoElement/propoScaled)- Marks propoElement as a fixed element
 
@@ -547,6 +548,7 @@ propoContainer
 		}
 		else
 		{
+			/*
 			$(this).parents().each(function(){
 				var $this = $(this);
 				
@@ -557,6 +559,10 @@ propoContainer
 					return;
 				}
 			});
+			*/
+			parent = $(this).offsetParent();
+			parent_width =  parent.width();
+			
 		}
 		
 		if(!$this.hasClass('propoContainer'))
@@ -639,7 +645,11 @@ propoContainer
 			}
 		}
 		else {
-			$this.css('width', percent_scale * 100 + '%');
+			if(!this.hasClass('propoIgnoreX'))
+			{
+				$this.css('width', percent_scale * 100 + '%');
+			}
+			
 			if(!$this.hasClass('propoIgnoreY'))
 				$this.css('height', height+'px');
 			else
