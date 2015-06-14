@@ -76,8 +76,6 @@ var Blast = function(target_canvas, options){
 	this.color_b = options.color_b;
 	this.opacity = options.opacity;
 	
-	console.log('TEST', validColor(this.color_a));
-	
 	// Animation related
 	this.speed = options.speed;
 	this.direction = options.direction;
