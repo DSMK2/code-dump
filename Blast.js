@@ -54,8 +54,19 @@ var Blast = function(target_canvas, options){
 		if(this.debug) console.log('Blast: Canvas element required');
 		return;
 	}
+	var regex_rgb_rgba =/(rgb\(\s*[0-9]{1,9},\s*[0-9]{1,9},\s*[0-9]{1,9}\){1})|(rgba\(\s*[0-9]{1,9},\s*[0-9]{1,9},\s*[0-9]{1,9},\s*([0-9]+\.[0-9]+\)|(1|0){1})){1}/,
+	regex_hex = /#[a-fA-F0-9]{6}/;
 	
+	// Check if first color is valid
+	if(!(regex_rgb_rgba.test(options.color_a) || regex_hex.test(options.color_a)))
+		options.color_a = '#000000';
+	
+	// Check if second color is valid	
+	if(!(regex_rgb_rgba.test(options.color_b) || regex_hex.test(options.color_b)))
+		options.color_b = '#ffffff';
+		
 	// Blast properties
+	
 	this.segments = options.segments*2;
 	this.position_x = options.x;
 	this.position_y = options.y;
@@ -63,6 +74,9 @@ var Blast = function(target_canvas, options){
 	this.angle_current = 0;
 	this.color_a = options.color_a;
 	this.color_b = options.color_b;
+	this.opacity = options.opacity;
+	
+	console.log('TEST', validColor(this.color_a));
 	
 	// Animation related
 	this.speed = options.speed;
@@ -70,11 +84,11 @@ var Blast = function(target_canvas, options){
 	this.animation_timeout = false;
 	
 	//
-	this.canvas_origin = {x: document.body.clientWidth*this.position_x, y: document.body.clientHeight*this.position_y};
+	this.canvas_origin = {x: this.canvas.width*this.position_x, y: this.canvas.height*this.position_y};
 
 	var t = this;
 	window.onresize = function(){
-		t.canvas_origin = {x: document.body.clientWidth*t.position_x, y: document.body.clientHeight*t.position_y};
+		t.canvas_origin = {x: t.canvas.width*t.position_x, y: t.canvas.height*t.position_y};
 	
 		
 	};
@@ -87,7 +101,8 @@ Blast.defaults = {
 	y: 0.5,
 	debug: false,
 	color_a: '#000000',
-	color_b: '#ffffff'
+	color_b: '#ffffff',
+	opacity: 1
 };
 
 Blast.prototype = {
@@ -104,20 +119,21 @@ Blast.prototype = {
 		y = 0,
 		screen_width = document.body.clientWidth,
 		screen_height = document.body.clientHeight;
-		context.clearRect(0,0,screen_width, screen_height);
+		context.clearRect(0,0,screen_width, screen_height),
+		old_global_alpha = context.globalAlpha, // Save old opacity
+		swap = false;
+		
+		// Get canvas corners
 		this.angle_corners = [];
 		this.angle_corners.push({angle: Math.atan2(-this.canvas_origin.y, -this.canvas_origin.x)*(180/Math.PI)+180, x : 0, y: 0});
-		this.angle_corners.push({angle: Math.atan2(-this.canvas_origin.y, document.body.clientWidth-this.canvas_origin.x)*(180/Math.PI)+180, x : document.body.clientWidth, y : 0});
-		this.angle_corners.push({angle: Math.atan2(document.body.clientHeight-this.canvas_origin.y, document.body.clientWidth-this.canvas_origin.x)*(180/Math.PI)+180, x : document.body.clientWidth, y : document.body.clientHeight});
-		this.angle_corners.push({angle: Math.atan2(document.body.clientHeight-this.canvas_origin.y, -this.canvas_origin.x)*(180/Math.PI)+180, x : 0, y: document.body.clientHeight});
+		this.angle_corners.push({angle: Math.atan2(-this.canvas_origin.y, this.canvas.width-this.canvas_origin.x)*(180/Math.PI)+180, x : this.canvas.width, y : 0});
+		this.angle_corners.push({angle: Math.atan2(this.canvas.height-this.canvas_origin.y, this.canvas.width-this.canvas_origin.x)*(180/Math.PI)+180, x :this.canvas.width, y : this.canvas.height});
+		this.angle_corners.push({angle: Math.atan2(this.canvas.height-this.canvas_origin.y, -this.canvas_origin.x)*(180/Math.PI)+180, x : 0, y: this.canvas.height});
+		context.canvas.width = this.canvas.width;
+		context.canvas.height = this.canvas.height;
 		
-		context.canvas.width = document.body.clientWidth;
-		context.canvas.height = document.body.clientHeight;
-		
-		
-		
-		var
-		swap = false;
+		// Set alpha to specified opacity
+		context.globalAlpha = this.opacity;
 		
 		for(var i = 0; i < this.segments; i++)
 		{
@@ -192,6 +208,9 @@ Blast.prototype = {
 			}
 			context.closePath();
 		}
+		
+		// Set alpha to specified opacity
+		context.globalAlpha = old_global_alpha
 	},
 	start : function(){
 		var t = this;
