@@ -1,63 +1,69 @@
-function quadTreeNode(parent, pos, size, level){
-	this.parent;
-	this.children = new Array();
+/*
+* QuadTree
+*
+* QuadTree starts from top left corner, fitting Javascript and HTML elements
+*/
+function QuadTree(width, height, max_levels, max_items, options){
+
+	// Must have width, height, max_levels, and max_items
+	if(width === undefined || height === undefined || max_levels === undefined || max_items == undefined)
+		return;
 	
-	this.pos = pos != null ? pos : new vector(0,0);
-	this.size = size != null ? size : new vector(0,0);
+	this.size = {width: width: , height: height};
+	this.pos = {x: options.x !== undefined ? options.x : 0, y: options.y !== undefined ? options.y}; // Origin corner
+	this.max_levels = max_levels;
+	this.max_items = max_items;
 	
-	this.items = new Array();
-	this.level = level;
+	this.children = new Array(); // Contains child QuadTrees
+	this.items = new Array(); // Contains all elements put into the QuadTree
+	this.level = options.level !== undefined ? options.level : 0; // Current level of this QuadTree if its a child
 	return this;
 }
 
 quadTreeNode.prototype = {
-	max_items: 5,
-	max_levels: 5,
+	// Clears the QuadTree of items and children
 	clear: function(){
 		this.items = new Array();
-		for(var i = 0; i < this.children.length; i++)
-		{
-			if(this.children[i] != null)
-			{
-				this.children[i].clear();
-				this.children = new Array();
-			}
-		}
+		this.children = new Array();
 	},
+	// Splits QuadTree into four child QuadTrees
 	split: function(){
-		var size = new vector(this.size.x/2, this.size.y/2);
+		// Size of children
+		var new_width = this.size.width/2,
+		new_height = this.size.height/2;
 		
-		this.children.push(new quadTreeNode(this, new vector(this.pos.x, this.pos.y), size, this.level+1));
-		this.children.push(new quadTreeNode(this, new vector(this.pos.x+this.size.x/2, this.pos.y), size, this.level+1));
-		this.children.push(new quadTreeNode(this, new vector(this.pos.x, this.pos.y+this.size.y/2), size, this.level+1));
-		this.children.push(new quadTreeNode(this, new vector(this.pos.x+this.size.x/2, this.pos.y+this.size.y/2), size, this.level+1));
+		for(var y = 0; y < 2; y++)
+			for(var x = 0; x < 2; x++)
+				new QuadTree(new_width, new_height, this.max_levels-1, this.max_items, {x: new_width*x, y:new_height*y, level: this.level+1});
+		
 	},
-	getIndex: function(tar){
-		if(!tar)
+	// Gets the index of the child QuadTree the item fits in
+	getIndex: function(target, target_width, target_height, target_x, target_y){
+		if(!target)
+			return -1;
+	
+		var index = -1,
+		mid_x = this.pos.x+this.size.width/2,
+		mid_y = this.pos.y+this.size.height/2,
+		fits_top = target_y < mid_y && target_y+target_height < mid_y,
+		fits_bottom = target_y > mid_y;
+		
+		/*
+		if(target_width >= mid_x || target_height >= mid_y)
+			return -1;
+		*/
+		// Checks if the target is 'between' quadtrees
+		if((target_x < mid_x && target_x+target_width > mid_x) || (target_y < mid_y && target_y+target_height > mid_y))
 		{
 			return -1;
 		}
-	
-		var index = -1;
-		var mid_x = this.pos.x+this.size.x/2;
-		var mid_y = this.pos.y+this.size.y/2;
 		
-		var fits_top = tar.pos.y < mid_y && tar.pos.y+tar.size.y < mid_y;
-		var fits_bottom = tar.pos.y > mid_y;
-		
-		if(tar.size.x >= mid_x || tar.size.y >=mid_y)
-		{
-			return index;
-		}
-		
-		if((tar.pos.x < mid_x && tar.pos.x+tar.size.x > mid_x) || (tar.pos.y < mid_y && tar.pos.y+tar.size.y > mid_x))
-		{
-			return index;
-		}
-		
-		
-		if(tar.pos.x < mid_x && tar.pos.x + tar.size.x < mid_x)
-		{
+		// QuadTree children layout
+		// 0 1
+		// 2 3
+		// Left side
+		if(target_x < mid_x && target_x+target_width < mid_x)
+		{	
 			if(fits_top){
 				index = 0;
 			}
@@ -65,7 +71,8 @@ quadTreeNode.prototype = {
 				index = 2;
 			}
 		}
-		else if(tar.pos.x > mid_x)
+		// Right side
+		else if(target_x > mid_x)
 		{
 			if(fits_top){
 				index = 1;
@@ -76,36 +83,41 @@ quadTreeNode.prototype = {
 		}
 		return index;
 	},
-	insert: function(tar){
-		if(this.children[0] != null){
-			var index = this.getIndex(tar);
+	// Inserts an item into the QuadTree
+	insert: function(target, target_width, target_height, target_x, target_y){
+		// Check if target fits into any child quadtrees if any
+		if(this.children.length !== 0){
+			var index = this.getIndex(tar, target_width, target_height, target_x, target_y);
+			// If it fits, insert into a child quadtree instead
 			if(index != -1){
-				this.children[index].insert(tar);
+				this.children[index].insert(tar, target_width, target_height, target_x, target_y);
 				return;
 			}
 		}
 		
+		// Add item to QuadTree items list
 		this.items.push(tar);
 		
+		// Split this QuadTree and reinsert all items into fitting child QuadTrees
 		if(this.items.length > this.max_items && this.level < this.max_levels)
 		{
-			if(this.children[0] == null)
-			{
+			if(this.children.length === 0)
 				this.split();
-			}
 			
+			// See if item fits into any child QuadTrees
 			for(var i = 0; i < this.items.length; i++)
 			{
 				var index =  this.getIndex(this.items[i]);
 				if(index != -1){
-					this.children[index].insert(this.items[i]);
+					this.children[index].insert(this.items[i], target_width, target_height, target_x, target_y);
 					this.items.splice(i, 1);
+					break;
 				}
 			}
 		}
 	},
-	retrieve: function(result, tar){
-		var index = this.getIndex(tar);
+	retrieve: function(result, target, target_width, target_height, target_x, target_y){
+		var index = this.getIndex(target, target_width, target_height, target_x, target_y);
 		if(index != -1 && this.children[0] != null){
 			this.children[index].retrieve(result, tar);
 		}
@@ -119,38 +131,5 @@ quadTreeNode.prototype = {
 		}
 		
 		return result;
-	},
-	drawNodes: function(){
-		for(var i = 0; i < this.children.length; i++)
-		{
-			this.children[i].drawNodes();
-		}
-		GLOBALS.context.beginPath();
-		GLOBALS.context.lineWidth=1;
-		GLOBALS.context.moveTo(this.pos.x, this.pos.y);
-		GLOBALS.context.lineTo(this.pos.x, this.pos.y+this.size.y);
-		GLOBALS.context.strokeStyle = '#ff0000';
-		GLOBALS.context.stroke();
-		
-		GLOBALS.context.beginPath();
-		GLOBALS.context.lineWidth=1;
-		GLOBALS.context.moveTo(this.pos.x, this.pos.y+this.size.y);
-		GLOBALS.context.lineTo(this.pos.x+this.size.x, this.pos.y+this.size.y);
-		GLOBALS.context.strokeStyle = '#00ff00';
-		GLOBALS.context.stroke();
-		
-		GLOBALS.context.beginPath();
-		GLOBALS.context.lineWidth=1;
-		GLOBALS.context.moveTo(this.pos.x+this.size.x, this.pos.y+this.size.y);
-		GLOBALS.context.lineTo(this.pos.x+this.size.x, this.pos.y);
-		GLOBALS.context.strokeStyle = '#0000ff';
-		GLOBALS.context.stroke();
-		
-		GLOBALS.context.beginPath();
-		GLOBALS.context.lineWidth=1;
-		GLOBALS.context.moveTo(this.pos.x+this.size.x, this.pos.y);
-		GLOBALS.context.lineTo(this.pos.x, this.pos.y);
-		GLOBALS.context.strokeStyle = '#ffff00';
-		GLOBALS.context.stroke();
-	},
+	}
 }
