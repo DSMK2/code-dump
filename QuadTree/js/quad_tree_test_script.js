@@ -5,13 +5,10 @@ $(function(){
 	
 	context.canvas.width = $('body').width();
 	context.canvas.height = $('body').height();
-	context.rect(0, 0, context.canvas.width, context.canvas.height); 
-	context.fillStyle = 'white';
-	context.fill();
 	
 	var quad_tree = new QuadTree(context.canvas.width, context.canvas.height, 5, 5);
 	quad_tree.drawQuadTree(canvas);
-	
+	/*
 	var quad_tree_test_timer = window.setInterval(function(){
 		var start_x = context.canvas.width*0.50*Math.random(),
 		start_y = context.canvas.height*0.50*Math.random(),
@@ -28,5 +25,97 @@ $(function(){
 		var canvas = $('#quad_tree_zone')[0];
 		quad_tree.drawQuadTree(canvas);
 	}, 1);
+	*/
+	var pos_x = 50,
+	pos_y = 50,
+	movement_flags = 
+	{
+		up: false,
+		down: false,
+		left: false,
+		right: false
+	},
+	image_fighter;
 	
+	image_fighter = new Image();
+	image_fighter.onload = function(){
+		console.log('asdf');
+	}
+	image_fighter.src = 'images/shoot_stuff_ship.png';
+	
+	function redraw() {
+
+		context.rect(0, 0, context.canvas.width, context.canvas.height); 
+		context.fillStyle = 'white';
+		context.fill();
+	
+		context.imageSmoothingEnabled= false;
+		context.drawImage(image_fighter, pos_x, pos_y, 16, 22);
+		quad_tree.drawQuadTree(canvas);
+		window.setTimeout(function(){
+			redraw();
+		}, 60/1000);
+	}
+	
+	window.requestAnimationFrame(function(){
+		redraw();
+	});
+	window.setInterval(function(){
+		if(movement_flags.left)
+		{
+			pos_x+=-5;
+		}
+		else if(movement_flags.right)
+		{
+			pos_x+=5;
+		}
+		
+		if(movement_flags.up)
+		{
+			pos_y+=-5;
+		}
+		else if(movement_flags.down)
+		{
+			pos_y+=5;
+		}
+	}, 60/1000);
+	$(window).on('keydown', function(e){
+		switch(e.which){
+			case 37: // left
+				movement_flags.left = true;
+			break;
+			
+			case 38: // up
+				movement_flags.up = true;
+			break;
+			
+			case 39: // right
+				movement_flags.right = true;
+			break;
+			
+			case 40: // down
+				movement_flags.down = true;
+			break;
+		}
+	});
+	
+	$(window).on('keyup', function(e){
+		switch(e.which){
+			case 37: // left
+				movement_flags.left = false;
+			break;
+			
+			case 38: // up
+				movement_flags.up = false;
+			break;
+			
+			case 39: // right
+				movement_flags.right = false;
+			break;
+			
+			case 40: // down
+				movement_flags.down = false;
+			break;
+		}
+	});
 });
