@@ -8,24 +8,24 @@ $(function(){
 	
 	var quad_tree = new QuadTree(context.canvas.width, context.canvas.height, 5, 5);
 	quad_tree.drawQuadTree(canvas);
-	/*
+	
 	var quad_tree_test_timer = window.setInterval(function(){
-		var start_x = context.canvas.width*0.50*Math.random(),
-		start_y = context.canvas.height*0.50*Math.random(),
+		var start_x = context.canvas.width*Math.random(),
+		start_y = context.canvas.height*Math.random(),
 		end_x = start_x + (context.canvas.width-start_x)*Math.random(),
 		end_y = start_y + (context.canvas.height-start_y)*Math.random(),
-		color = color = '#8b8e89';
+		color = color = '#ffae00';
 		
 		context.beginPath();
-		context.rect(start_x, start_y, 10, 10);
+		context.rect(start_x, start_y, 5, 5);
 		context.fillStyle = color;
 		context.fill();
 		context.closePath();
-		quad_tree.insert({}, 10, 10, start_x, start_y);
+		quad_tree.insert({}, 5, 5, start_x, start_y);
 		var canvas = $('#quad_tree_zone')[0];
 		quad_tree.drawQuadTree(canvas);
-	}, 1);
-	*/
+	}, 60/1000);
+	
 	var pos_x = 50,
 	pos_y = 50,
 	movement_flags = 
@@ -44,7 +44,7 @@ $(function(){
 	image_fighter.src = 'images/shoot_stuff_ship.png';
 	
 	function redraw() {
-
+		/*
 		context.rect(0, 0, context.canvas.width, context.canvas.height); 
 		context.fillStyle = 'white';
 		context.fill();
@@ -55,11 +55,19 @@ $(function(){
 		window.setTimeout(function(){
 			redraw();
 		}, 60/1000);
+		*/
 	}
+	
+	/*
+	window.setInterval(function(){
+		quad_tree.clear();
+		quad_tree.insert({}, 16, 22, pos_x, pos_y);
+	});
+	*/
 	
 	window.requestAnimationFrame(function(){
 		redraw();
-	});
+	}, 60/1000);
 	window.setInterval(function(){
 		if(movement_flags.left)
 		{
