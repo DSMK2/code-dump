@@ -1,41 +1,54 @@
-GSSWeapon.defaults = {
-	// Position relative to GSSEntity parent
-	x: 0,
-	y: 0,
-	
-	power_cost: 0,
-	damage: 1,
-	velocity: 1,
-	faction_id: -1,
-	// Shots Per second
-	firerate: 10,
-	image_index: 0
-	
-}
+/*
+Notes: Projectiles can either be a regular moving body or a line, but for the purposes of this stage of development, regular moving body
+*/
 
-function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, angle, x, y, velocity) {
+GSSProjectile.id = 0;
+
+GSSProjectile.defaults = {
+	angle: 0, 
+	x: 0, 
+	y: 0, 
+	velocity_magnitude: 1,
+	lifetime: 1000
+};
+
+
+/** 
+* Requires image, parent gss entity, body def
+*/
+function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) {
+	options = extend(GSSProjectile.defaults, options);
+	console.log(options);
 	this.image = image;
 	this.parent = GSSEntity_parent;
 	
+	this.lifetime_end = Date.now()+options.lifetime;
+	
 	this.projectile_body_def = body_def;
-	this.projectile_body_def.angle = angle;
-	this.projectile_body_def.position = new b2Vec2(x, y);
-
+	this.projectile_body_def.angle = options.angle;
+	this.projectile_body_def.position = new b2Vec2(options.x, options.y);
+	
 	this.projectile_body = GSS.world.CreateBody(this.projectile_body_def);
 	this.projectile_body.CreateFixtureFromDef(fixture_def);
-	
 	this.projectile_body.GSS_parent = this;
-	this.velocity = new b2Vec2(-velocity*Math.cos(angle), -velocity*Math.sin(angle));
-	GSS.entities.push(this);
+	
+	this.velocity = new b2Vec2(-options.velocity_magnitude*Math.cos(options.angle), -options.velocity_magnitude*Math.sin(options.angle));
+
 	this.projectile_body.SetLinearVelocity(this.velocity);
 	
+	this.id = GSSProjectile.id;
+	GSSProjectile.id++;
 	
+	this.projectile_body.GSSData = {type: 'GSSProjectile', obj: this};
+	
+	return this;
 }
 
 GSSProjectile.prototype = {
 	update: function(){
 		
-		
+		if(this.lifetime_end < Date.now())
+			this.destroy();
 	},
 	redraw: function(){
 		var angle = this.projectile_body.GetAngle(),
@@ -50,8 +63,33 @@ GSSProjectile.prototype = {
 		GSS.context.drawImage(this.image, -this.image.width/2, -this.image.height/2);
 		GSS.context.rotate(-angle);
 		GSS.context.translate(-x, -y);
+	},
+	/* Remove projectile eligibility from rendering and simulation */
+	destroy: function(){
+		var index = GSS.getProjectileWithID(this.id), _this = this;
+		if(index == -1)
+			return;
+		GSS.world.DestroyBody(this.projectile_body);
+		GSS.projectiles.splice(index, 1);
 	}
 }
+
+GSSWeapon.defaults = {
+	// Position relative to GSSEntity parent
+	x: 0,
+	y: 0,
+	
+	power_cost: 0,
+	damage: 1,
+	velocity: 10,
+	faction_id: -1,
+	// Shots Per second
+	firerate: 10,
+	image_index: 0,
+	lifetime: 1000
+	
+}
+
 
 function GSSWeapon(GSSEntity_parent, options){
 	if(GSSEntity_parent === undefined || GSS.world === undefined)
@@ -74,11 +112,10 @@ function GSSWeapon(GSSEntity_parent, options){
 	this.damage = options.damage;
 	this.velocity = options.velocity;
 	this.parent = GSSEntity_parent;
-	console.log(this.parent);
+
 	this.projectile_body_def = new b2BodyDef();
 	this.projectile_body_def.type = b2_dynamicBody;
 	this.projectile_body_def.bullet = true;
-	this.projectile_body_def.angle = options.angle*DEGTORAD;
 	//this.projectile_body_def.fixedRotation = this.lock_rotation;
 	
 	this.projectile_fixture_def = new b2FixtureDef();
@@ -97,20 +134,23 @@ GSSWeapon.prototype = {
 	*/
 	fire: function() {
 		var time_current = Date.now();
-		console.log(this.last_fired, time_current);
 		if(this.last_fired == 0 || this.last_fired+this.fire_rate-time_current < 0)
 		{
 			var parent_body = this.parent.getBody(),
 			parent_position = parent_body.GetPosition(),
 			parent_angle = parent_body.GetAngle(),
-			new_vel = new b2Vec2(0,0),
 			new_x = (this.x)*Math.cos(parent_angle) - (this.y)*Math.sin(parent_angle),
 			new_y = (this.x)*Math.sin(parent_angle) + (this.y)*Math.cos(parent_angle);
 		
-			//console.log(parent_angle * RADTODEG);		
-		
-			b2Vec2.MulScalar(new_vel, parent_angle, 1)
-			new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, parent_angle, new_x+parent_position.x, new_y+parent_position.y, 50);
+			GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+				{
+					angle: parent_angle, 
+					velocity_magnitude: this.velocity, 
+					x: new_x+parent_position.x, 
+					y: new_y+parent_position.y
+				}
+			));
+			
 			this.last_fired = time_current;
 		}
 	}

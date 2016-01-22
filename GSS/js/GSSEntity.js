@@ -58,16 +58,17 @@ function GSSEntity(faction_id, options) {
 			weapon_data.x = weapon_group[w].x;
 			weapon_data.y = weapon_group[w].y;
 			weapon_data.faction_id = this.faction;
-			weapon_group.weapon = new GSSWeapon(this, weapon_data);
+			weapon_group[w].weapon = new GSSWeapon(this, weapon_data);
 		}
 	}
-	
+
+	/*
 	// Sort weapon slots
 	options.weapon_slots.sort(function(a, b){
 		if(a.group === undefined || b.group === undefined)
 			return 0;
 	});
-	
+	*/
 	this.power_max = options.power_max;
 	this.power_current = this.power_max;
 	this.power_regen = options.power_regen;
@@ -115,10 +116,11 @@ function GSSEntity(faction_id, options) {
 	
 	
 	this.entity_body.CreateFixtureFromDef(entity_body_fixture);
-	this.entity_body.GSS_parent = this;
+	this.entity_body.GSSData = {type: 'GSSEntity', obj: this};
 	//this.entity_body.ptr.toFixed = this.lock_rotation;
 	// END: liquidfun
 	
+	return this;
 }
 
 GSSEntity.prototype = {
@@ -132,8 +134,9 @@ GSSEntity.prototype = {
 			current_weapon_group = this.weapon_slots[g];
 			for(var w = 0; w < current_weapon_group.length; w++)
 			{
-				if(current_weapon_group.weapon != undefined)
-					current_weapon_group.weapon.fire();
+				console.log(w, current_weapon_group);
+				if(current_weapon_group[w].weapon != undefined)
+					current_weapon_group[w].weapon.fire();
 			}
 		}
 	},

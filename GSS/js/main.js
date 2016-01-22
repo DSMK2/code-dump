@@ -30,6 +30,7 @@ GSS = {
 	mouse_info: {x: -1, y: -1, left_click: false, right_click: false, middle_click: false},
 	fps: 1/60,
 	entities: [],
+	projectiles: [],
 	weapon_data: [],
 	entity_data: [],
 	images: [],
@@ -39,7 +40,7 @@ weapon_data = [
 	{image_src: 'images/laser_beam.png', data: {id: 0, dmg: 1}}
 ],
 entity_data = [
-	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 50, angular_acceleration: 180, thrust_acceleration: 25, thrust_deceleration: 10, velocity_magnitude_max: 4, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}]]}}
+	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 50, angular_acceleration: 180, thrust_acceleration: 25, thrust_deceleration: 10, velocity_magnitude_max: 4, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}, {x: -21, y: -5, weapon_id: 0}, {x: -21, y: 5, weapon_id: 0}]]}}
 ],
 faction_data = [
 	{faction: 'player'},
@@ -47,7 +48,34 @@ faction_data = [
 ]
 images_loaded = 0;
 
+/**
+* Will assume the projectile array is sorted
+*/
+GSS.getProjectileWithID = function(id, start, end) {
+	var halfway, candidate, projectiles = GSS.projectiles;
+	console.log(start, end);
+	if(end-start <= 0)
+	{
+		if(GSS.projectiles[start].id == id)
+			return start;
+		else
+			return -1;
+	}
+	start = start === undefined ? 0 : start;
+	end = end === undefined ? GSS.projectiles.length-1 : end;
+	halfway = start+Math.floor((end-start)/2);
+	candidate = GSS.projectiles[halfway];
 
+	if(candidate.id == id)
+		return halfway; 
+	else
+	{
+		if(id > candidate.id)
+			return GSS.getProjectileWithID(id, halfway+1, end);
+		else
+			return GSS.getProjectileWithID(id, start, halfway);
+	} 
+}
 
 jQuery(function($){
 	var $canvas = $('#canvas'),
@@ -146,13 +174,55 @@ jQuery(function($){
 	}).trigger('resize');
 	
 	// World
-	/*
-	GSS.world.SetContactListener({
+	world.SetContactListener({
 		BeginContactBody: function(contact) {
-			console.log(contact);
+			var
+			a = contact.GetFixtureA(),
+			b = contact.GetFixtureB(),
+			a_body = a.body,
+			b_body = b.body, 
+			GSSData,
+			type,
+			GSSObject;
+			
+			console.log('hit');
+			if(a_body.GSSData !== undefined)
+			{
+				console.log('a', a_body.GSSData);
+				GSSData = a_body.GSSData;
+				type = GSSData.type;
+				GSSObject = GSSData.obj;
+				console.log(GSSObject);
+				switch(type)
+				{
+					case 'GSSProjectile':
+						GSSObject.destroy();
+						break;
+						
+					default: 
+						break;
+				}
+			}
+			
+			if(b_body.GSSData !== undefined)
+			{
+				GSSData = b_body.GSSData;
+				type = GSSData.type;
+				GSSObject = GSSData.obj;
+				switch(type)
+				{
+					case 'GSSProjectile':
+						
+						GSSObject.destroy();
+						break;
+						
+					default: 
+						break;
+				}
+			}
 		}
 	});
-	*/
+
 	ground_def.position.Set(context.canvas.width/2/GSS.PTM, context.canvas.height*0.95/GSS.PTM);
 	ground_body = GSS.world.CreateBody(ground_def);
 	ground_poly = new b2PolygonShape();
@@ -224,6 +294,24 @@ jQuery(function($){
 		{
 			GSS.entities[i].update();
 		}
+		
+		for(var i = 0; i < GSS.projectiles.length; i++)
+		{
+			GSS.projectiles[i].update();
+		}
+		/*
+		// Left
+		if(GSS.keys[37])
+		
+		// Up
+		if(GSS.keys[38])
+		
+		// Right
+		if(GSS.keys[39])
+		
+		// Down
+		if(GSS.keys[40])
+		*/
 	}
 	
 	// Renders the canvas
@@ -247,6 +335,11 @@ jQuery(function($){
 		for(var i = 0; i < GSS.entities.length; i++)
 		{
 			GSS.entities[i].redraw();
+		}
+		
+		for(var i = 0; i < GSS.projectiles.length; i++)
+		{
+			GSS.projectiles[i].redraw();
 		}
 		
 		window.requestAnimationFrame(updateCanvas);

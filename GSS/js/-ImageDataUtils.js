@@ -68,31 +68,7 @@ var ImageDataUtils = {
 		return result;
 	},
 	getOutline:function(image_data, rgba_ignore) {
-		var index = [
-			'0000', // 0
-			'0001', // 1
-			'0010', // 2
-			'0011', // 3
-			'0100', // 4
-			'0101', // 5
-			'0110', // 6
-			'0111', // 7
-			'1000', // 8
-			'1001', // 9
-			'1010', // 10
-			'1011', // 11
-			'1100', // 12
-			'1101', // 13
-			'1110', // 14
-			'1111'  // 15
-		],
-		top_left_corner,
-		top_right_corner,
-		bottom_left_corner,
-		bottom_right_corner;
-		
-		//ImageDataUtils
-		
+	
 	},
 	// See http://stackoverflow.com/questions/12175991/crop-image-white-space-automatically-using-jquery/12178531#12178531
 	// Oh oh good time to learn how to use web workers!
