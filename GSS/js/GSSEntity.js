@@ -34,7 +34,7 @@ polygons array used to build body (in PX)
 bool if controlled by player (controls override)
 */
 function GSSEntity(faction_id, options) {
-	if(GSS.world === undefined || GSS.context === undefined)
+	if(GSS.world === undefined)
 		return;
 	
 	options = extend(GSSEntity.defaults, options);
@@ -94,6 +94,9 @@ function GSSEntity(faction_id, options) {
 	this.lock_rotation = options.lock_rotation;
 	this.follow_mouse = options.follow_mouse;
 	// END: Movement stats
+	console.log(this.image);
+	this.plane = new THREE.Mesh(new THREE.PlaneGeometry(this.image.width, this.image.height), this.image.material);
+	GSS.scene.add(this.plane);
 	
 	// BEGIN: liquidfun
 	var entity_body_def = new b2BodyDef();
@@ -106,7 +109,8 @@ function GSSEntity(faction_id, options) {
 	// Todo: Create Polygons for each fixture
 	var entity_body_fixture = new b2FixtureDef();
 	entity_body_fixture.shape = new b2PolygonShape();
-		
+	
+	
 	entity_body_fixture.shape.SetAsBoxXY(this.image.width/2/GSS.PTM, this.image.height/2/GSS.PTM);
 	entity_body_fixture.density = 1;
 	entity_body_fixture.friction = 1;
@@ -158,8 +162,8 @@ GSSEntity.prototype = {
 		down = false,
 		fire = false,
 		// Get mouse position relative to world
-		offset_mouse_x = GSS.mouse_info.x/GSS.PTM,
-		offset_mouse_y = GSS.mouse_info.y/GSS.PTM,
+		offset_mouse_x = (GSS.mouse_info.x-GSS.context.width()/2+GSS.camera.position.x)/GSS.PTM,
+		offset_mouse_y = -(GSS.mouse_info.y-GSS.context.height()/2-GSS.camera.position.y)/GSS.PTM,
 		angle_current = this.entity_body.GetAngle(),
 		position = this.entity_body.GetPosition(),
 		angle_target,
@@ -168,6 +172,7 @@ GSSEntity.prototype = {
 		angular_acceleration_needed,
 		torque;
 		
+		console.log(offset_mouse_x, offset_mouse_y);
 	
 		this.angular_velocity_current = this.entity_body.GetAngularVelocity()
 		this.velocity_current = this.entity_body.GetLinearVelocity();
@@ -193,20 +198,20 @@ GSSEntity.prototype = {
 			if(up)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : angle_current+135*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ?  135*DEGTORAD : angle_current+45*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : angle_current-135*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : angle_current-45*DEGTORAD;
 				else
-					move_angle = this.movement_relative_to_screen ? 270*DEGTORAD : angle_current+180*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 90*DEGTORAD : angle_current+180*DEGTORAD;
 			}
 			else if(down)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 135*DEGTORAD : angle_current+45*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : angle_current+135*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : angle_current-45*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : angle_current-135*DEGTORAD;
 				else
-					move_angle = this.movement_relative_to_screen ? 90*DEGTORAD : angle_current;
+					move_angle = this.movement_relative_to_screen ? 270*DEGTORAD : angle_current;
 			}
 			else
 			{
@@ -309,7 +314,12 @@ GSSEntity.prototype = {
 				this.entity_body.SetTransform(this.entity_body.GetPosition(), this.angle_current);
 			}
 			// END: Angular Movement (Mouse Tracking)
-		}	
+		}
+
+		this.plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
+		this.plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
+		this.plane.rotation.z = this.entity_body.GetAngle();
+		//GSS.camera.lookAt(this.plane.position);
 	},
 	redraw: function(){
 		var angle = this.entity_body.GetAngle(),
@@ -319,10 +329,12 @@ GSSEntity.prototype = {
 		if(x-this.image.width/2 < 0 || y-this.image.height/2 < 0 || x-this.image.width/2 > GSS.context.canvas.width || y-this.image.height/2 > GSS.context.canvas.height)
 			return;
 		
+		/*
 		GSS.context.translate(x, y);
 		GSS.context.rotate(angle);
 		GSS.context.drawImage(this.image, -this.image.width/2, -this.image.height/2);
 		GSS.context.rotate(-angle);
 		GSS.context.translate(-x, -y);
+		*/
 	}
 }

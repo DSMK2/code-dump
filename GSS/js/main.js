@@ -24,6 +24,9 @@ Number.prototype.clamp = function(min, max) {
 var world,
 GSS = {
 	context: null,
+	scene: null,
+	renderer: null,
+	camera: null,
 	PTM: null,
 	world: null,
 	keys: {},
@@ -79,10 +82,28 @@ GSS.getProjectileWithID = function(id, start, end) {
 
 jQuery(function($){
 	var $canvas = $('#canvas'),
-	context = $canvas[0].getContext('2d'),
-	update_interval;
+	update_interval,
+	canvas_width = $canvas.width(),
+	canvas_height = $canvas.height(),
+	near = 0.1,
+	far = 10000,
+	renderer = new THREE.WebGLRenderer({canvas: $canvas[0], antilias: false}),
+	camera = new THREE.OrthographicCamera( canvas_width / - 2, canvas_width / 2, canvas_height / 2, canvas_height / - 2, near, far ),
+	scene = new THREE.Scene();
 	
-	GSS.context = context;
+	renderer.setClearColor(0xFFFFFF);
+	
+	scene.add(camera);
+	camera.position.z = 300;
+	renderer.setSize(canvas_width, canvas_height);
+	
+	renderer.render(scene, camera);
+	
+	GSS.context = $canvas;
+	GSS.scene = scene;
+	GSS.camera = camera;
+	GSS.renderer = renderer;
+	
 	GSS.PTM = 12;
 	GSS.world = world = new b2World(new b2Vec2(0, 0));
 	
@@ -143,6 +164,21 @@ jQuery(function($){
 	// Load images
 	for(var i = 0; i < img_srcs.length; i++)
 	{
+		var texture_loader = new THREE.TextureLoader(),
+		material;
+		texture_loader.load(img_srcs[i], function(texture){
+			texture.anisotropy = 0;
+			texture.minFilter = THREE.NearestFilter;
+			texture.magFilter = THREE.NearestFilter;
+			console.log(texture.image.width, texture.image.height);
+			material = new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true});
+			material.side = THREE.DoubleSide;
+			GSS.images.push({width: texture.image.width, height: texture.image.height, material: material});
+			images_loaded++;
+			if(images_loaded == img_srcs.length)
+				$(window).trigger('all_images_loaded');
+		});
+		/*
 		var image = new Image();
 		image.onload = function(){
 			
@@ -152,25 +188,18 @@ jQuery(function($){
 		}
 		image.src = img_srcs[i];
 		GSS.images.push(image);
-	}
-	
+		*/
+	}	
 	
 	$(window).on('all_images_loaded', function(){
-		entity_data[0].data.x = context.canvas.width/2;
-		entity_data[0].data.y = context.canvas.height/2;
 		console.log(entity_data[0].data);
 		GSS.entities.push(new GSSEntity(0, entity_data[0].data));
 	});
 	
-	// Init Canvas
-	context.canvas.width = $canvas.width();
-	context.canvas.height = $canvas.height();
-	context.imageSmoothingEnabled = false;
-	
 	$(window).on('resize', function(){
-		context.canvas.width = $canvas.width();
-		context.canvas.height = $canvas.height();
-		context.imageSmoothingEnabled = false;
+		canvas_width = $canvas.width();
+		canvas_height = $canvas.height();
+		renderer.setSize(canvas_width, canvas_height);
 	}).trigger('resize');
 	
 	// World
@@ -223,19 +252,15 @@ jQuery(function($){
 		}
 	});
 
-	ground_def.position.Set(context.canvas.width/2/GSS.PTM, context.canvas.height*0.95/GSS.PTM);
+	ground_def.position.Set(0, 5);
 	ground_body = GSS.world.CreateBody(ground_def);
 	ground_poly = new b2PolygonShape();
-	ground_poly.SetAsBoxXY(context.canvas.width/2/GSS.PTM, 5/GSS.PTM);
+	ground_poly.SetAsBoxXY(canvas_width/2/GSS.PTM, 5/GSS.PTM);
 	ground_body.CreateFixtureFromShape(ground_poly, 0);
-	window.ground_body = ground_body;
-	
-	context.beginPath();
-	context.rect(0,0, context.canvas.width, context.canvas.height);
-	context.fillStyle= '#ffffff';
-	context.fill();
-	context.stroke();
-	context.closePath();
+	var ground_mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvas_width, 10), new THREE.MeshBasicMaterial({color: 0x8B8E89}));
+	ground_mesh.position.x = ground_body.GetPosition().x*GSS.PTM;
+	ground_mesh.position.y = ground_body.GetPosition().y*GSS.PTM;
+	scene.add(ground_mesh);
 	
 	 // document.oncontextmenu = function() {return false;};
 	
@@ -299,51 +324,29 @@ jQuery(function($){
 		{
 			GSS.projectiles[i].update();
 		}
-		/*
+		
+		
+		/*camera controls*/
 		// Left
 		if(GSS.keys[37])
-		
+			GSS.camera.position.x--;
 		// Up
 		if(GSS.keys[38])
+			GSS.camera.position.y++;
 		
 		// Right
 		if(GSS.keys[39])
+			GSS.camera.position.x++;
 		
 		// Down
 		if(GSS.keys[40])
-		*/
+			GSS.camera.position.y--;
+		
 	}
 	
-	// Renders the canvas
-	function updateCanvas(){
-		context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-
-		// White background
-		context.beginPath();
-		context.rect(0,0, context.canvas.width, context.canvas.height);
-		context.fillStyle= '#ffffff';
-		context.fill();
-		context.closePath();
-		
-		context.beginPath();
-		context.rect(ground_body.GetPosition().x*GSS.PTM-context.canvas.width/2, context.canvas.height*0.95-10/2, context.canvas.width, 10*GSS.PTM/2);
-		context.fillStyle= '#0000ff';
-		context.fill();
-		context.stroke();
-		context.closePath();
-
-		for(var i = 0; i < GSS.entities.length; i++)
-		{
-			GSS.entities[i].redraw();
-		}
-		
-		for(var i = 0; i < GSS.projectiles.length; i++)
-		{
-			GSS.projectiles[i].redraw();
-		}
-		
-		window.requestAnimationFrame(updateCanvas);
+	function renderScene(){
+		renderer.render(scene, camera);
+		window.requestAnimationFrame(renderScene);
 	}
-	
-	window.requestAnimationFrame(updateCanvas);
+	window.requestAnimationFrame(renderScene);
 });

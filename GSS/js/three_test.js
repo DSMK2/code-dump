@@ -11,7 +11,7 @@ jQuery(function($){
 	near = 0.1,
 	far = 10000,
 	
-	renderer = new THREE.WebGLRenderer(),
+	renderer = new THREE.WebGLRenderer({antialias: false}),
 	camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, near, far );
 	scene = new THREE.Scene();
 	
@@ -51,7 +51,8 @@ jQuery(function($){
 	fighter_plane;
 	
 	fighter_texture_loader.load('./images/simplefighter.png', function(texture){
-		texture.minFilter = THREE.LinearFilter;
+		texture.anisotropy = 0;
+		texture.minFilter = THREE.NearestFilter;
 		texture.magFilter = THREE.NearestFilter;
 		fighter_plane = new THREE.Mesh(new THREE.PlaneGeometry(42, 25), new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true}));
 		fighter_plane.material.side = THREE.DoubleSide;
