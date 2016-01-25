@@ -172,8 +172,6 @@ GSSEntity.prototype = {
 		angular_acceleration_needed,
 		torque;
 		
-		console.log(offset_mouse_x, offset_mouse_y);
-	
 		this.angular_velocity_current = this.entity_body.GetAngularVelocity()
 		this.velocity_current = this.entity_body.GetLinearVelocity();
 		
@@ -198,27 +196,27 @@ GSSEntity.prototype = {
 			if(up)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ?  135*DEGTORAD : angle_current+45*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ?  135*DEGTORAD : angle_current-135*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : angle_current-45*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : angle_current+135*DEGTORAD;
 				else
 					move_angle = this.movement_relative_to_screen ? 90*DEGTORAD : angle_current+180*DEGTORAD;
 			}
 			else if(down)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : angle_current+135*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : angle_current-45*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : angle_current-135*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : angle_current+45*DEGTORAD;
 				else
 					move_angle = this.movement_relative_to_screen ? 270*DEGTORAD : angle_current;
 			}
 			else
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 180*DEGTORAD : angle_current+90*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 180*DEGTORAD : angle_current-90*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 0*DEGTORAD : angle_current-90*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 0*DEGTORAD : angle_current+90*DEGTORAD;
 			}
 			
 			if(fire)
@@ -226,15 +224,15 @@ GSSEntity.prototype = {
 			
 			//move_angle = angle_current-move_angle*DEGTORAD;
 			//console.log(move_angle*RADTODEG);
-			x = this.thrust_acceleration*Math.cos(move_angle);
-			y = this.thrust_acceleration*Math.sin(move_angle);
+			x = (up || down || left || right)*this.thrust_acceleration*Math.cos(move_angle);
+			y = (up || down || left || right)*this.thrust_acceleration*Math.sin(move_angle);
 			
 			// Apply thrust any controls
 			if(up || down || left || right)
 				this.entity_body.ApplyForceToCenter(new b2Vec2(x, y), true);
 			
 			// Set to max velocity if applied force exceeds max velocity
-			if(this.velocity_current.Length() >= this.velocity_magnitude_max)
+			if(Math.abs(this.velocity_current.Length()) >= this.velocity_magnitude_max)
 			{
 				var new_vec = new b2Vec2(0, 0);
 				b2Vec2.Normalize(new_vec, this.entity_body.GetLinearVelocity());
@@ -242,21 +240,36 @@ GSSEntity.prototype = {
 				this.entity_body.SetLinearVelocity(new_vec);
 			}
 			
-			// Slowdown for vertical movement
-			if(!up && !down)
-			{
-				y_force = (this.entity_body.GetMass()*this.velocity_current.y);
-				if(this.velocity_current.y !== 0)
-					this.entity_body.ApplyForceToCenter(new b2Vec2(0, (Math.abs(y_force) >= this.thrust_deceleration ? this.thrust_deceleration*(y_force > 0 ? -1 : 1): -y_force)), true);				
-			}
+			//console.log(this.velocity_current.Length(), x, y);
 			
-			// Slowdown for horizontal movement
-			if(!left && !right)
+			var new_vec = new b2Vec2(0,0);
+			b2Vec2.Sub(new_vec, this.entity_body.GetLinearVelocity(), new b2Vec2(x, y));
+			x_force = this.entity_body.GetMass()*new_vec.x;
+			y_force = this.entity_body.GetMass()*new_vec.y;
+			x_force = Math.abs(x_force) >= this.thrust_deceleration ? this.thrust_deceleration*(x_force > 0 ? -1 : 1): -x_force;
+			y_force = Math.abs(y_force) >= this.thrust_deceleration ? this.thrust_deceleration*(y_force > 0 ? -1 : 1): -y_force;
+			this.entity_body.ApplyForceToCenter(new b2Vec2(x_force, y_force), true);
+			
+			/*
+			if(this.movement_relative_to_screen)
 			{
-				x_force = (this.entity_body.GetMass()*this.velocity_current.x);
-				if(this.velocity_current.x !== 0)
-					this.entity_body.ApplyForceToCenter(new b2Vec2((Math.abs(x_force) >= this.thrust_deceleration ? this.thrust_deceleration*(x_force > 0 ? -1 : 1): -x_force), 0), true);
+				// Slowdown for vertical movement
+				if(!up && !down)
+				{
+					y_force = (this.entity_body.GetMass()*this.velocity_current.y);
+					if(this.velocity_current.y !== 0)
+						this.entity_body.ApplyForceToCenter(new b2Vec2(0, (Math.abs(y_force) >= this.thrust_deceleration ? this.thrust_deceleration*(y_force > 0 ? -1 : 1): -y_force)), true);				
+				}
+				
+				// Slowdown for horizontal movement
+				if(!left && !right)
+				{
+					x_force = (this.entity_body.GetMass()*this.velocity_current.x);
+					if(this.velocity_current.x !== 0)
+						this.entity_body.ApplyForceToCenter(new b2Vec2((Math.abs(x_force) >= this.thrust_deceleration ? this.thrust_deceleration*(x_force > 0 ? -1 : 1): -x_force), 0), true);
+				}
 			}
+			*/
 			
 			// END: Linear Movement
 			
@@ -319,7 +332,9 @@ GSSEntity.prototype = {
 		this.plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
 		this.plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
 		this.plane.rotation.z = this.entity_body.GetAngle();
-		//GSS.camera.lookAt(this.plane.position);
+		
+		GSS.camera.position.x = this.plane.position.x;
+		GSS.camera.position.y = this.plane.position.y
 	},
 	redraw: function(){
 		var angle = this.entity_body.GetAngle(),

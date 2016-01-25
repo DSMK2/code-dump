@@ -43,7 +43,7 @@ weapon_data = [
 	{image_src: 'images/laser_beam.png', data: {id: 0, dmg: 1}}
 ],
 entity_data = [
-	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 50, angular_acceleration: 180, thrust_acceleration: 25, thrust_deceleration: 10, velocity_magnitude_max: 4, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}, {x: -21, y: -5, weapon_id: 0}, {x: -21, y: 5, weapon_id: 0}]]}}
+	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 50, angular_acceleration: 180, thrust_acceleration: 10, thrust_deceleration: 1, velocity_magnitude_max: 5, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}, {x: -21, y: -5, weapon_id: 0}, {x: -21, y: 5, weapon_id: 0}]]}}
 ],
 faction_data = [
 	{faction: 'player'},
