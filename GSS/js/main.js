@@ -31,19 +31,25 @@ GSS = {
 	world: null,
 	keys: {},
 	mouse_info: {x: -1, y: -1, left_click: false, right_click: false, middle_click: false},
-	fps: 1/60,
+	FPS: 1/60,
 	entities: [],
 	projectiles: [],
 	weapon_data: [],
 	entity_data: [],
-	images: [],
-	faction_data: [] // Holds filtering info
-},
-weapon_data = [
+	image_data: [],
+	faction_data: [], // Holds collision filtering info,
+	
+	player: false,
+	follow_player: true
+};
+
+
+/* Load this externally */
+var weapon_data = [
 	{image_src: 'images/laser_beam.png', data: {id: 0, dmg: 1}}
 ],
 entity_data = [
-	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 50, angular_acceleration: 180, thrust_acceleration: 10, thrust_deceleration: 1, velocity_magnitude_max: 5, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}, {x: -21, y: -5, weapon_id: 0}, {x: -21, y: 5, weapon_id: 0}]]}}
+	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 180, angular_acceleration: 45, thrust_acceleration: 10, thrust_deceleration: 25, velocity_magnitude_max: 10, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}, {x: -21, y: -5, weapon_id: 0}, {x: -21, y: 5, weapon_id: 0}]]}}
 ],
 faction_data = [
 	{faction: 'player'},
@@ -57,7 +63,7 @@ images_loaded = 0;
 GSS.getProjectileWithID = function(id, start, end) {
 	var halfway, candidate, projectiles = GSS.projectiles;
 	console.log(start, end);
-	if(end-start <= 0)
+	if(end-start <= 0 || id == undefined)
 	{
 		if(GSS.projectiles[start].id == id)
 			return start;
@@ -68,7 +74,10 @@ GSS.getProjectileWithID = function(id, start, end) {
 	end = end === undefined ? GSS.projectiles.length-1 : end;
 	halfway = start+Math.floor((end-start)/2);
 	candidate = GSS.projectiles[halfway];
-
+	
+	if(candidate === undefined || candidate.id === undefined)
+		return -1;
+	
 	if(candidate.id == id)
 		return halfway; 
 	else
@@ -78,6 +87,13 @@ GSS.getProjectileWithID = function(id, start, end) {
 		else
 			return GSS.getProjectileWithID(id, start, halfway);
 	} 
+}
+
+GSS.cameraFollowPlayer = function(follow_player) {
+	if(follow_player === undefined)
+		GSS.follow_player = !GSS.follow_player
+	
+	GSS.follow_player = follow_player;
 }
 
 jQuery(function($){
@@ -131,69 +147,95 @@ jQuery(function($){
 	console.log(GSS.faction_data);
 	
 	// Build list of images to load (avoid duplicates)
-	var img_srcs = [];
+	// Find weapon images to load
 	for(var i = 0; i < weapon_data.length; i++)
 	{
 		var img_src = weapon_data[i].image_src,
-		existing_index = img_srcs.indexOf(img_src);
+		existing_index = -1;
+		
+		for(var a = 0; a < GSS.image_data.length; a++)
+		{
+			if(GSS.image_data[a].url == img_src)
+			{
+				existing_index = a;
+				break;
+			}
+		}
 		
 		if(existing_index == -1)
 		{
-			img_srcs.push(img_src);
-			existing_index = img_srcs.length-1;
+			GSS.image_data.push({url: img_src, index: GSS.image_data.length});
+			existing_index = GSS.image_data.length-1;
 		}
 		weapon_data[i].data.image_index = existing_index;
 		GSS.weapon_data.push(weapon_data[i]);
 	}
 	
-	
+	// Find entity images to load
 	for(var i = 0; i < entity_data.length; i++)
 	{
 		var img_src = entity_data[i].image_src,
-		existing_index = img_srcs.indexOf(img_src);
+		existing_index = -1;
+		
+		for(var a = 0; a < GSS.image_data.length; a++)
+		{
+			if(GSS.image_data[a].url == img_src)
+			{
+				existing_index = a;
+				break;
+			}
+		}
 		
 		if(existing_index == -1)
 		{
-			img_srcs.push(img_src);
-			existing_index = img_srcs.length-1;
+			GSS.image_data.push({url: img_src, index: GSS.image_data.length});
+			existing_index = GSS.image_data.length-1;
 		}
 		entity_data[i].data.image_index = existing_index;
 	}
 	
-	
+	console.log('test', GSS.image_data);
 	// Load images
-	for(var i = 0; i < img_srcs.length; i++)
+	for(var i = 0; i < GSS.image_data.length; i++)
 	{
 		var texture_loader = new THREE.TextureLoader(),
-		material;
-		texture_loader.load(img_srcs[i], function(texture){
+		material,
+		image_data = GSS.image_data[i];
+		console.log(image_data.url);
+		texture_loader.load(image_data.url, function(texture){
+			// Prevents blurry sprites
 			texture.anisotropy = 0;
 			texture.minFilter = THREE.NearestFilter;
 			texture.magFilter = THREE.NearestFilter;
-			console.log(texture.image.width, texture.image.height);
+			
+			// Create material
 			material = new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true});
 			material.side = THREE.DoubleSide;
-			GSS.images.push({width: texture.image.width, height: texture.image.height, material: material});
-			images_loaded++;
-			if(images_loaded == img_srcs.length)
-				$(window).trigger('all_images_loaded');
-		});
-		/*
-		var image = new Image();
-		image.onload = function(){
+			
+			for(var id = 0; id < GSS.image_data.length; id++)
+			{
+				console.log(texture.image.src);
+				if(texture.image.src.search(GSS.image_data[id].url) != -1)
+				{
+					console.log('hit');
+					GSS.image_data[id].width = texture.image.width, 
+					GSS.image_data[id].height = texture.image.height, 
+					GSS.image_data[id].material =  material
+				}
+			}
 			
 			images_loaded++;
-			if(images_loaded == img_srcs.length)
+			
+			if(images_loaded == GSS.image_data.length)
 				$(window).trigger('all_images_loaded');
-		}
-		image.src = img_srcs[i];
-		GSS.images.push(image);
-		*/
-	}	
+		});
+	}
 	
+
+	// Events
 	$(window).on('all_images_loaded', function(){
-		console.log(entity_data[0].data);
-		GSS.entities.push(new GSSEntity(0, entity_data[0].data));
+		GSS.player = new GSSEntity(0, entity_data[0].data) 
+		GSS.entities.push(GSS.player);
 	});
 	
 	$(window).on('resize', function(){
@@ -203,6 +245,7 @@ jQuery(function($){
 	}).trigger('resize');
 	
 	// World
+	/*
 	world.SetContactListener({
 		BeginContactBody: function(contact) {
 			var
@@ -251,6 +294,7 @@ jQuery(function($){
 			}
 		}
 	});
+	*/
 
 	ground_def.position.Set(0, 5);
 	ground_body = GSS.world.CreateBody(ground_def);
@@ -306,14 +350,23 @@ jQuery(function($){
 		}
 	});
 	
-	update_interval = window.setInterval(update, GSS.fps);
+	update_interval = window.setInterval(update, GSS.FPS);
 	
 	// Updates the game
 	function update()
 	{
+		//console.log(GSS.entities.length, GSS.projectiles.length);
+		var offset_mouse_x = GSS.mouse_info.x-GSS.context.width()/2,
+		offset_mouse_y = -(GSS.mouse_info.y-GSS.context.height()/2),
+		angle = Math.atan2(offset_mouse_y, offset_mouse_x), 
+		max_distance = 500,
+		distance = ( Math.sqrt(Math.pow(-offset_mouse_x, 2)+Math.pow(-offset_mouse_y, 2))).clamp(0, max_distance),
+		x = distance*Math.cos(angle),
+		y = distance*Math.sin(angle);
+		
 		//console.log(GSS.mouse_info);
 		GSS.old_time = (new Date()).getMilliseconds();
-		GSS.world.Step(GSS.fps, 6, 2);
+		GSS.world.Step(GSS.FPS, 6, 2);
 		
 		for(var i = 0; i < GSS.entities.length; i++)
 		{
@@ -323,6 +376,11 @@ jQuery(function($){
 		for(var i = 0; i < GSS.projectiles.length; i++)
 		{
 			GSS.projectiles[i].update();
+		}
+		
+		if(GSS.follow_player && (GSS.player !== undefined && GSS.player))
+		{		
+			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.5*GSS.FPS);
 		}
 		
 		

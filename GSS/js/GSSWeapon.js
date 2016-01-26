@@ -18,7 +18,6 @@ GSSProjectile.defaults = {
 */
 function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) {
 	options = extend(GSSProjectile.defaults, options);
-	console.log(options);
 	this.image = image;
 	this.parent = GSSEntity_parent;
 	
@@ -41,14 +40,27 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	
 	this.projectile_body.GSSData = {type: 'GSSProjectile', obj: this};
 	
+	this.destroyed = false;
+	// BEGIN: THREE.js
+	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.image.width, this.image.height), this.image.material);
+	GSS.scene.add(this.mesh_plane);
+	// END: THREE.js
+	
 	return this;
 }
 
 GSSProjectile.prototype = {
 	update: function(){
+		if(this.destroyed)
+			return;
 		
+		this.mesh_plane.position.x = this.projectile_body.GetPosition().x*GSS.PTM;
+		this.mesh_plane.position.y = this.projectile_body.GetPosition().y*GSS.PTM;
+		this.mesh_plane.rotation.z = this.projectile_body.GetAngle();
+		/*
 		if(this.lifetime_end < Date.now())
 			this.destroy();
+		*/
 	},
 	redraw: function(){
 		var angle = this.projectile_body.GetAngle(),
@@ -66,11 +78,15 @@ GSSProjectile.prototype = {
 	},
 	/* Remove projectile eligibility from rendering and simulation */
 	destroy: function(){
+		return;
+		this.destroyed = true;
 		var index = GSS.getProjectileWithID(this.id), _this = this;
 		if(index == -1)
 			return;
 		GSS.world.DestroyBody(this.projectile_body);
+		GSS.scene.remove(this.mesh_plane);
 		GSS.projectiles.splice(index, 1);
+		
 	}
 }
 
@@ -84,7 +100,7 @@ GSSWeapon.defaults = {
 	velocity: 10,
 	faction_id: -1,
 	// Shots Per second
-	firerate: 10,
+	firerate: 10000,
 	image_index: 0,
 	lifetime: 1000
 	
@@ -99,7 +115,7 @@ function GSSWeapon(GSSEntity_parent, options){
 	
 	// Projectile Image
 
-	this.image = GSS.images[options.image_index];
+	this.image = GSS.image_data[options.image_index];
 	console.log(this.image, options.image_index);
 	this.last_fired = 0;
 	this.fire_rate = 1000/options.firerate;
@@ -125,7 +141,7 @@ function GSSWeapon(GSSEntity_parent, options){
 	this.projectile_fixture_def.friction = 1;
 	this.projectile_fixture_def.restitution = 0; // Bounce yes
 	this.projectile_fixture_def.filter.groupIndex = -GSS.faction_data[options.faction_id].category;
-
+	
 }
 
 GSSWeapon.prototype = {

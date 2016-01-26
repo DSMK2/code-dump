@@ -40,7 +40,7 @@ function GSSEntity(faction_id, options) {
 	options = extend(GSSEntity.defaults, options);
 	
 	// BEGIN: GSSEntity Data
-	this.image = GSS.images[options.image_index];
+	this.image = GSS.image_data[options.image_index];
 	this.polygons;
 	
 	this.is_player = options.is_player;
@@ -94,9 +94,11 @@ function GSSEntity(faction_id, options) {
 	this.lock_rotation = options.lock_rotation;
 	this.follow_mouse = options.follow_mouse;
 	// END: Movement stats
-	console.log(this.image);
-	this.plane = new THREE.Mesh(new THREE.PlaneGeometry(this.image.width, this.image.height), this.image.material);
-	GSS.scene.add(this.plane);
+	
+	// BEGIN: THREE.js
+	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.image.width, this.image.height), this.image.material);
+	GSS.scene.add(this.mesh_plane);
+	// END: THREE.js
 	
 	// BEGIN: liquidfun
 	var entity_body_def = new b2BodyDef();
@@ -138,7 +140,6 @@ GSSEntity.prototype = {
 			current_weapon_group = this.weapon_slots[g];
 			for(var w = 0; w < current_weapon_group.length; w++)
 			{
-				console.log(w, current_weapon_group);
 				if(current_weapon_group[w].weapon != undefined)
 					current_weapon_group[w].weapon.fire();
 			}
@@ -148,31 +149,46 @@ GSSEntity.prototype = {
 		this.angle_current = new_angle*DEGTORAD;
 		this.entity_body.SetTransform(this.entity_body.GetPosition(), this.angle_current);
 	},
+	getAngleToPosition: function(x, y)
+	{
+		var angle = -1,
+		position = this.entity_body.GetPosition(),
+		x = position.x - x,
+		y = position.y - y,
+		angle = Math.atan2(y, x);
+		
+		angle = angle < 0 ? angle+(2*Math.PI) : angle;
+		
+		return angle;
+	},
 	update: function(){
-		var 
-		x = 0,
-		y = 0,
-		x_force,
-		y_force,
-		dt = (new Date()).getMilliseconds()-GSS.old_time,
-		move_angle = 0,
+		var
+		// Control flags
 		left = false,
 		right = false,
 		up = false,
 		down = false,
 		fire = false,
-		// Get mouse position relative to world
+		
+		// Linear movement
+		x = 0,
+		y = 0,
+		x_force,
+		y_force,
+		move_angle = 0,
+		
+		// Angle movement
 		offset_mouse_x = (GSS.mouse_info.x-GSS.context.width()/2+GSS.camera.position.x)/GSS.PTM,
 		offset_mouse_y = -(GSS.mouse_info.y-GSS.context.height()/2-GSS.camera.position.y)/GSS.PTM,
 		angle_current = this.entity_body.GetAngle(),
-		position = this.entity_body.GetPosition(),
-		angle_target,
+		angle_target = this.getAngleToPosition(offset_mouse_x, offset_mouse_y),
 		angle_delta,
 		dir,
 		angular_acceleration_needed,
-		torque;
+		torque,
+		deceleration_thrust = false;
 		
-		this.angular_velocity_current = this.entity_body.GetAngularVelocity()
+		this.angular_velocity_current = this.entity_body.GetAngularVelocity();
 		this.velocity_current = this.entity_body.GetLinearVelocity();
 		
 		if(this.is_player)
@@ -186,7 +202,7 @@ GSSEntity.prototype = {
 			
 			// Left/Right
 			if(GSS.keys[65] === true) // Left
-				left = true
+				left = true;
 			else if(GSS.keys[68] === true) // Right
 				right = true;
 			
@@ -224,8 +240,8 @@ GSSEntity.prototype = {
 			
 			//move_angle = angle_current-move_angle*DEGTORAD;
 			//console.log(move_angle*RADTODEG);
-			x = (up || down || left || right)*this.thrust_acceleration*Math.cos(move_angle);
-			y = (up || down || left || right)*this.thrust_acceleration*Math.sin(move_angle);
+			x = (up || down || left || right)*this.thrust_acceleration*Math.cos(move_angle)/GSS.FPS;
+			y = (up || down || left || right)*this.thrust_acceleration*Math.sin(move_angle)/GSS.FPS;
 			
 			// Apply thrust any controls
 			if(up || down || left || right)
@@ -242,34 +258,13 @@ GSSEntity.prototype = {
 			
 			//console.log(this.velocity_current.Length(), x, y);
 			
-			var new_vec = new b2Vec2(0,0);
-			b2Vec2.Sub(new_vec, this.entity_body.GetLinearVelocity(), new b2Vec2(x, y));
-			x_force = this.entity_body.GetMass()*new_vec.x;
-			y_force = this.entity_body.GetMass()*new_vec.y;
+			deceleration_thrust = new b2Vec2(0,0);
+			b2Vec2.Sub(deceleration_thrust, this.entity_body.GetLinearVelocity(), new b2Vec2(x, y));
+			x_force = this.entity_body.GetMass()*deceleration_thrust.x;
+			y_force = this.entity_body.GetMass()*deceleration_thrust.y;
 			x_force = Math.abs(x_force) >= this.thrust_deceleration ? this.thrust_deceleration*(x_force > 0 ? -1 : 1): -x_force;
 			y_force = Math.abs(y_force) >= this.thrust_deceleration ? this.thrust_deceleration*(y_force > 0 ? -1 : 1): -y_force;
 			this.entity_body.ApplyForceToCenter(new b2Vec2(x_force, y_force), true);
-			
-			/*
-			if(this.movement_relative_to_screen)
-			{
-				// Slowdown for vertical movement
-				if(!up && !down)
-				{
-					y_force = (this.entity_body.GetMass()*this.velocity_current.y);
-					if(this.velocity_current.y !== 0)
-						this.entity_body.ApplyForceToCenter(new b2Vec2(0, (Math.abs(y_force) >= this.thrust_deceleration ? this.thrust_deceleration*(y_force > 0 ? -1 : 1): -y_force)), true);				
-				}
-				
-				// Slowdown for horizontal movement
-				if(!left && !right)
-				{
-					x_force = (this.entity_body.GetMass()*this.velocity_current.x);
-					if(this.velocity_current.x !== 0)
-						this.entity_body.ApplyForceToCenter(new b2Vec2((Math.abs(x_force) >= this.thrust_deceleration ? this.thrust_deceleration*(x_force > 0 ? -1 : 1): -x_force), 0), true);
-				}
-			}
-			*/
 			
 			// END: Linear Movement
 			
@@ -277,25 +272,18 @@ GSSEntity.prototype = {
 			// See: http://www.iforce2d.net/b2dtut/rotate-to-angle
 			// See: http://www.dummies.com/how-to/content/how-to-calculate-the-torque-needed-to-accelerate-a.html
 			if(!this.lock_rotation)
-			{
-				// Get Angle data
-				// These values will always be needed/helpful
-				angle_target = Math.atan2((position.y-offset_mouse_y), (position.x-offset_mouse_x));
-				angle_target = angle_target < 0 ? angle_target+(2*Math.PI) : angle_target;
-			
+			{			
 				if(this.follow_mouse)
 				{
 					this.entity_body.SetTransform(this.entity_body.GetPosition(), angle_target);
 				}
 				else
 				{
-					
-					
 					// Constrain body's current angle to 0 - 360
 					if(angle_current > 2*Math.PI)
 						this.entity_body.SetTransform(this.entity_body.GetPosition(), angle_current-2*Math.PI);
 					
-					// Get direction rotaiton is going to happen
+					// Get direction rotation is going to happen
 					dir = Math.cos(angle_current)*Math.sin(angle_target)-Math.sin(angle_current)*Math.cos(angle_target) > 0 ? 1 : -1;
 					
 					// Offset angle target to match direction i.e. if the direction is possitive and the current angle is 360, the destination is 360 plus
@@ -309,7 +297,7 @@ GSSEntity.prototype = {
 					while(angle_delta > Math.PI) { angle_delta -= 360*Math.PI/180; }
 					
 					// Find acceleration for a step needed to move angle_delta
-					angular_acceleration_needed = ((angle_delta-this.angular_velocity_current)/GSS.fps).clamp(-this.angular_acceleration, this.angular_acceleration);
+					angular_acceleration_needed = ((angle_delta-this.angular_velocity_current)/GSS.FPS).clamp(-this.angular_acceleration, this.angular_acceleration);
 
 					torque = this.entity_body.GetInertia()*angular_acceleration_needed;
 					this.entity_body.ApplyTorque(torque);
@@ -329,27 +317,8 @@ GSSEntity.prototype = {
 			// END: Angular Movement (Mouse Tracking)
 		}
 
-		this.plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
-		this.plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
-		this.plane.rotation.z = this.entity_body.GetAngle();
-		
-		GSS.camera.position.x = this.plane.position.x;
-		GSS.camera.position.y = this.plane.position.y
-	},
-	redraw: function(){
-		var angle = this.entity_body.GetAngle(),
-		x = this.entity_body.GetPosition().x*GSS.PTM,
-		y = this.entity_body.GetPosition().y*GSS.PTM; 
-		
-		if(x-this.image.width/2 < 0 || y-this.image.height/2 < 0 || x-this.image.width/2 > GSS.context.canvas.width || y-this.image.height/2 > GSS.context.canvas.height)
-			return;
-		
-		/*
-		GSS.context.translate(x, y);
-		GSS.context.rotate(angle);
-		GSS.context.drawImage(this.image, -this.image.width/2, -this.image.height/2);
-		GSS.context.rotate(-angle);
-		GSS.context.translate(-x, -y);
-		*/
+		this.mesh_plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
+		this.mesh_plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
+		this.mesh_plane.rotation.z = this.entity_body.GetAngle();
 	}
 }
