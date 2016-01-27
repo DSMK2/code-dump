@@ -45,6 +45,7 @@ function GSSEntity(faction_id, options) {
 	
 	this.is_player = options.is_player;
 	this.faction = faction_id === undefined ? -1 : faction_id;
+	this.mark_for_delete = false;
 	
 	// Weapons handling
 	this.weapon_slots = options.weapon_slots;
@@ -61,7 +62,7 @@ function GSSEntity(faction_id, options) {
 			weapon_group[w].weapon = new GSSWeapon(this, weapon_data);
 		}
 	}
-
+	
 	/*
 	// Sort weapon slots
 	options.weapon_slots.sort(function(a, b){

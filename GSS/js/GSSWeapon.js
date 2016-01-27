@@ -21,7 +21,8 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	this.image = image;
 	this.parent = GSSEntity_parent;
 	
-	this.lifetime_end = Date.now()+options.lifetime;
+	this.lifetime_end = Date.now()+options.lifetime*Math.random();
+	this.mark_for_delete = false;
 	
 	this.projectile_body_def = body_def;
 	this.projectile_body_def.angle = options.angle;
@@ -51,16 +52,15 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 
 GSSProjectile.prototype = {
 	update: function(){
-		if(this.destroyed)
+		if(this.mark_for_delete)
 			return;
 		
 		this.mesh_plane.position.x = this.projectile_body.GetPosition().x*GSS.PTM;
 		this.mesh_plane.position.y = this.projectile_body.GetPosition().y*GSS.PTM;
 		this.mesh_plane.rotation.z = this.projectile_body.GetAngle();
-		/*
-		if(this.lifetime_end < Date.now())
+		
+		if(this.lifetime_end <= Date.now())
 			this.destroy();
-		*/
 	},
 	redraw: function(){
 		var angle = this.projectile_body.GetAngle(),
@@ -78,14 +78,13 @@ GSSProjectile.prototype = {
 	},
 	/* Remove projectile eligibility from rendering and simulation */
 	destroy: function(){
-		return;
-		this.destroyed = true;
-		var index = GSS.getProjectileWithID(this.id), _this = this;
-		if(index == -1)
-			return;
-		GSS.world.DestroyBody(this.projectile_body);
+		if(this.mark_for_delete)
+			return; 
+			
+		this.mark_for_delete = true;
 		GSS.scene.remove(this.mesh_plane);
-		GSS.projectiles.splice(index, 1);
+		GSS.world.DestroyBody(this.projectile_body);
+		GSS.projectiles_to_remove.push(this);
 		
 	}
 }
@@ -100,7 +99,7 @@ GSSWeapon.defaults = {
 	velocity: 10,
 	faction_id: -1,
 	// Shots Per second
-	firerate: 10000,
+	firerate: 100,
 	image_index: 0,
 	lifetime: 1000
 	

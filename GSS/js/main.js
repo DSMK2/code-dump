@@ -33,7 +33,9 @@ GSS = {
 	mouse_info: {x: -1, y: -1, left_click: false, right_click: false, middle_click: false},
 	FPS: 1/60,
 	entities: [],
+	entities_to_remove: [],
 	projectiles: [],
+	projectiles_to_remove: [],
 	weapon_data: [],
 	entity_data: [],
 	image_data: [],
@@ -49,7 +51,7 @@ var weapon_data = [
 	{image_src: 'images/laser_beam.png', data: {id: 0, dmg: 1}}
 ],
 entity_data = [
-	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 180, angular_acceleration: 45, thrust_acceleration: 10, thrust_deceleration: 25, velocity_magnitude_max: 10, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}, {x: -21, y: -5, weapon_id: 0}, {x: -21, y: 5, weapon_id: 0}]]}}
+	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 180, angular_acceleration: 45, thrust_acceleration: 10, thrust_deceleration: 25, velocity_magnitude_max: 10, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}]]}}
 ],
 faction_data = [
 	{faction: 'player'},
@@ -62,7 +64,7 @@ images_loaded = 0;
 */
 GSS.getProjectileWithID = function(id, start, end) {
 	var halfway, candidate, projectiles = GSS.projectiles;
-	console.log(start, end);
+
 	if(end-start <= 0 || id == undefined)
 	{
 		if(GSS.projectiles[start].id == id)
@@ -245,7 +247,6 @@ jQuery(function($){
 	}).trigger('resize');
 	
 	// World
-	/*
 	world.SetContactListener({
 		BeginContactBody: function(contact) {
 			var
@@ -294,7 +295,7 @@ jQuery(function($){
 			}
 		}
 	});
-	*/
+
 
 	ground_def.position.Set(0, 5);
 	ground_body = GSS.world.CreateBody(ground_def);
@@ -400,6 +401,14 @@ jQuery(function($){
 		if(GSS.keys[40])
 			GSS.camera.position.y--;
 		
+		// Clean up
+		while(GSS.projectiles_to_remove.length !== 0)
+		{
+			var projectile = GSS.projectiles_to_remove.pop(),
+			index = GSS.getProjectileWithID(projectile.id);
+			console.log(index);
+			GSS.projectiles.splice(index, 1);
+		}
 	}
 	
 	function renderScene(){
