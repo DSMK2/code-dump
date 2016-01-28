@@ -21,7 +21,7 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	this.image = image;
 	this.parent = GSSEntity_parent;
 	
-	this.lifetime_end = Date.now()+options.lifetime*Math.random();
+	this.lifetime_end = Date.now()+options.lifetime;
 	this.mark_for_delete = false;
 	
 	this.projectile_body_def = body_def;
@@ -32,8 +32,10 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	this.projectile_body.CreateFixtureFromDef(fixture_def);
 	this.projectile_body.GSS_parent = this;
 	
-	this.velocity = new b2Vec2(-options.velocity_magnitude*Math.cos(options.angle), -options.velocity_magnitude*Math.sin(options.angle));
-
+	var new_velocity = new b2Vec2(-options.velocity_magnitude*Math.cos(options.angle), -options.velocity_magnitude*Math.sin(options.angle));
+	b2Vec2.Add(new_velocity, new_velocity, this.parent.entity_body.GetLinearVelocity());
+	this.velocity = new_velocity;
+	console.log(this.velocity);
 	this.projectile_body.SetLinearVelocity(this.velocity);
 	
 	this.id = GSSProjectile.id;
@@ -94,15 +96,31 @@ GSSWeapon.defaults = {
 	x: 0,
 	y: 0,
 	
+	// Weapon fire image and sounds
+	fire_image_index: 0,
+	fire_sound_index: 0,
+	
+	// Weapon fire data
 	power_cost: 0,
+	firerate: 50,
+	faction_id: -1,
+	spread_oscilliate: true,
+	spread_oscilliate_reverse: true,
+	spread_oscilliate_reverse_on_complete: true,
+	spread: 10,
+	spread_fixed: false, // Fixed weapon spread flag, random spread otherwise
+	projectiles_per_shot: 1,
+	flipped: false,
+	
+	// Projectile image and sounds
+	projectile_image_index: 0,
+	projectile_hit_image_index: 0,
+	projectile_hit_sound_index: 0,
+	
+	// Projectile data
 	damage: 1,
 	velocity: 10,
-	faction_id: -1,
-	// Shots Per second
-	firerate: 100,
-	image_index: 0,
 	lifetime: 1000
-	
 }
 
 
@@ -114,8 +132,7 @@ function GSSWeapon(GSSEntity_parent, options){
 	
 	// Projectile Image
 
-	this.image = GSS.image_data[options.image_index];
-	console.log(this.image, options.image_index);
+	this.image = GSS.image_data[options.projectile_image_index];
 	this.last_fired = 0;
 	this.fire_rate = 1000/options.firerate;
 	
@@ -124,9 +141,24 @@ function GSSWeapon(GSSEntity_parent, options){
 	this.y = options.y/GSS.PTM;
 	
 	this.power_cost = options.power_cost;
+	
+	// Firing methods
+	this.spread = options.spread*DEGTORAD;
+	this.spread_fixed = options.spread_fixed;
+	this.projectiles_per_shot = options.projectiles_per_shot;
+	this.increment = this.projectiles_per_shot-1 !== 0 ? this.spread/(this.projectiles_per_shot-1) : 1;
+	this.increment_max = this.spread/this.increment;
+	this.increment_current = options.spread_oscilliate_reverse ? this.increment_max : 0;
+	
+	this.spread_oscilliate = options.spread_oscilliate;
+	this.spread_oscilliate_reverse = options.spread_oscilliate_reverse;
+	this.spread_oscilliate_reverse_on_complete = options.spread_oscilliate_reverse_on_complete;
+	
+	
 	this.damage = options.damage;
 	this.velocity = options.velocity;
 	this.parent = GSSEntity_parent;
+
 
 	this.projectile_body_def = new b2BodyDef();
 	this.projectile_body_def.type = b2_dynamicBody;
@@ -156,15 +188,57 @@ GSSWeapon.prototype = {
 			parent_angle = parent_body.GetAngle(),
 			new_x = (this.x)*Math.cos(parent_angle) - (this.y)*Math.sin(parent_angle),
 			new_y = (this.x)*Math.sin(parent_angle) + (this.y)*Math.cos(parent_angle);
-		
-			GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+			
+			if(this.spread_oscilliate && this.projectiles_per_shot > 1)
+			{
+				GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+					{
+						angle: parent_angle+this.increment_current*this.increment-this.spread/2, 
+						velocity_magnitude: this.velocity, 
+						x: new_x+parent_position.x, 
+						y: new_y+parent_position.y
+					}
+				));
+				if(this.spread_oscilliate_reverse)
+					this.increment_current--;
+				else
+					this.increment_current++;
+					
+				if(this.increment_current > this.increment_max)
 				{
-					angle: parent_angle, 
-					velocity_magnitude: this.velocity, 
-					x: new_x+parent_position.x, 
-					y: new_y+parent_position.y
+					if(this.spread_oscilliate_reverse_on_complete)
+					{
+						this.increment_current = this.increment_max;
+						this.spread_oscilliate_reverse = true;
+					}
+					else
+						this.increment_current = 0;
 				}
-			));
+				else if(this.increment_current < 0)
+				{
+					if(this.spread_oscilliate_reverse_on_complete)
+					{
+						this.increment_current = 0;
+						this.spread_oscilliate_reverse = false;
+					}
+					else
+						this.increment_current = this.increment_max;
+				}
+			}
+			else
+			{
+				for(var i = 0; i < this.projectiles_per_shot; i++)
+				{
+					GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+						{
+							angle: parent_angle+(this.spread_fixed ? this.increment*i-this.spread/2*(this.projectiles_per_shot != 1) : (this.spread*Math.random()-this.spread/2)), 
+							velocity_magnitude: this.velocity, 
+							x: new_x+parent_position.x, 
+							y: new_y+parent_position.y
+						}
+					));
+				}
+			}
 			
 			this.last_fired = time_current;
 		}

@@ -162,6 +162,15 @@ GSSEntity.prototype = {
 		
 		return angle;
 	},
+	destroy: function(){
+		if(this.mark_for_delete)
+			return;
+			
+		this.mark_for_delete = true;
+		GSS.scene.remove(this.mesh_plane);
+		GSS.world.DestroyBody(this.entity_body);
+		GSS.entities_to_remove.push(this);
+	},
 	update: function(){
 		var
 		// Control flags

@@ -98,6 +98,31 @@ GSS.cameraFollowPlayer = function(follow_player) {
 	GSS.follow_player = follow_player;
 }
 
+var node_size = 1000
+// From world center
+function getNodeDataAtPoint(x, y){
+	var node_x = Math.floor(x/node_size),
+	node_y = Math.floor(y/node_size),
+	bounds = {upperBound: new b2Vec2(node_x, node_y), lowerBound: new b2Vec2(node_x+node_size, node_y+node_size)};
+	console.log(node_x, node_y, bounds);
+	var array_test = [];
+	function test(p){
+		this.point = p;
+		this.fixture = null;
+	}
+	test.prototype.ReportFixture = function(asdf)
+	{
+		console.log('hit');
+		array_test.push(asdf.body);
+		this.fixture = asdf;
+		return true;
+	}
+	var test_p = new test(new b2Vec2(0,0));
+	world.QueryAABB(test_p, bounds, array_test);
+	console.log(test_p);
+}
+	
+
 jQuery(function($){
 	var $canvas = $('#canvas'),
 	update_interval,
@@ -125,6 +150,7 @@ jQuery(function($){
 	GSS.PTM = 12;
 	GSS.world = world = new b2World(new b2Vec2(0, 0));
 	
+
 	// Temp LiquidFun 
 	var 
 	ground_def = new b2BodyDef(),
@@ -258,7 +284,6 @@ jQuery(function($){
 			type,
 			GSSObject;
 			
-			console.log('hit');
 			if(a_body.GSSData !== undefined)
 			{
 				console.log('a', a_body.GSSData);
@@ -406,7 +431,6 @@ jQuery(function($){
 		{
 			var projectile = GSS.projectiles_to_remove.pop(),
 			index = GSS.getProjectileWithID(projectile.id);
-			console.log(index);
 			GSS.projectiles.splice(index, 1);
 		}
 	}
