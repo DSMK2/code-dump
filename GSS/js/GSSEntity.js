@@ -2,7 +2,10 @@ GSSEntity.defaults = {
 	x: 0,
 	y: 0,
 	angle: 0,
-	is_player : false,
+	is_player: false,
+	faction_id: -1,
+	hp: 100, 
+	shield: 100,
 	// Weapons data
 	/*
 	Example: {x: 0, y: 0, weapon: <GSSWeapon>, group: 0} and so on
@@ -33,33 +36,32 @@ image object required
 polygons array used to build body (in PX)
 bool if controlled by player (controls override)
 */
-function GSSEntity(faction_id, options) {
+function GSSEntity(index, options) {
 	if(GSS.world === undefined)
 		return;
 	
 	options = extend(GSSEntity.defaults, options);
 	
 	// BEGIN: GSSEntity Data
-	this.image = GSS.image_data[options.image_index];
+	this.mesh_data = GSS.image_data[options.image_index];
 	this.polygons;
-	
+	this.id = index;
 	this.is_player = options.is_player;
-	this.faction = faction_id === undefined ? -1 : faction_id;
+	this.faction = options.faction_id;
 	this.mark_for_delete = false;
 	
 	// Weapons handling
-	this.weapon_slots = options.weapon_slots;
+	this.weapon_slots = options.weapon_slots.slice(0);
 	for(var g = 0; g < options.weapon_slots.length; g++)
 	{
 		var weapon_group = options.weapon_slots[g];
-		for(var w = 0; w < weapon_group.length; w++)
+		for(var w = 0; w < weapon_group.weapons.length; w++)
 		{
-			var weapon_data = clone(GSS.weapon_data[weapon_group[w].weapon_id]);
-			console.log(weapon_data, GSS.weapon_data, weapon_group, weapon_group.weapon_id);
-			weapon_data.x = weapon_group[w].x;
-			weapon_data.y = weapon_group[w].y;
-			weapon_data.faction_id = this.faction;
-			weapon_group[w].weapon = new GSSWeapon(this, weapon_data);
+			var weapon_data = clone(GSS.weapon_data[weapon_group.weapons[w].weapon_id]);
+			weapon_data.data.x = weapon_group.weapons[w].x;
+			weapon_data.data.y = weapon_group.weapons[w].y;
+			weapon_data.data.faction_id = this.faction;
+			weapon_group.weapons[w].weapon = new GSSWeapon(this, weapon_data);
 		}
 	}
 	
@@ -97,7 +99,7 @@ function GSSEntity(faction_id, options) {
 	// END: Movement stats
 	
 	// BEGIN: THREE.js
-	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.image.width, this.image.height), this.image.material);
+	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.mesh_data.width, this.mesh_data.height), this.mesh_data.material);
 	GSS.scene.add(this.mesh_plane);
 	// END: THREE.js
 	
@@ -107,24 +109,20 @@ function GSSEntity(faction_id, options) {
 	entity_body_def.angle = options.angle*DEGTORAD;
 	entity_body_def.position = new b2Vec2(options.x/GSS.PTM, options.y/GSS.PTM);
 	entity_body_def.fixedRotation = this.lock_rotation;
-	this.entity_body = GSS.world.CreateBody(entity_body_def);
+	
 	
 	// Todo: Create Polygons for each fixture
-	var entity_body_fixture = new b2FixtureDef();
-	entity_body_fixture.shape = new b2PolygonShape();
-	
-	
-	entity_body_fixture.shape.SetAsBoxXY(this.image.width/2/GSS.PTM, this.image.height/2/GSS.PTM);
+	var entity_body_fixture = new b2FixtureDef();	
 	entity_body_fixture.density = 1;
 	entity_body_fixture.friction = 1;
 	entity_body_fixture.restitution = 0;
-	entity_body_fixture.filter.groupIndex = -GSS.faction_data[faction_id].category;
+	entity_body_fixture.filter.groupIndex = -GSS.faction_data[options.faction_id].category; // Same faction does not collide with each other
+	entity_body_fixture.shape = new b2PolygonShape();
+	entity_body_fixture.shape.SetAsBoxXY(this.mesh_data.width/2/GSS.PTM, this.mesh_data.height/2/GSS.PTM);
 	
-	
-	
+	this.entity_body = GSS.world.CreateBody(entity_body_def);
 	this.entity_body.CreateFixtureFromDef(entity_body_fixture);
 	this.entity_body.GSSData = {type: 'GSSEntity', obj: this};
-	//this.entity_body.ptr.toFixed = this.lock_rotation;
 	// END: liquidfun
 	
 	return this;
@@ -136,13 +134,17 @@ GSSEntity.prototype = {
 	},
 	fireWeapons: function(){
 		var current_weapon_group;
+		// Fires all weapon groups at once, depending on enabled or disabled
 		for(var g = 0; g < this.weapon_slots.length; g++)
 		{
 			current_weapon_group = this.weapon_slots[g];
-			for(var w = 0; w < current_weapon_group.length; w++)
+			if(current_weapon_group.enabled)
 			{
-				if(current_weapon_group[w].weapon != undefined)
-					current_weapon_group[w].weapon.fire();
+				for(var w = 0; w < current_weapon_group.weapons.length; w++)
+				{
+					if(current_weapon_group.weapons[w].weapon != undefined)
+						current_weapon_group.weapons[w].weapon.fire();
+				}
 			}
 		}
 	},

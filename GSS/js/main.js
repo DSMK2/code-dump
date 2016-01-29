@@ -21,6 +21,32 @@ Number.prototype.clamp = function(min, max) {
   return Math.min(Math.max(this, min), max);
 };
 
+/* Load this externally */
+var weapon_data = [
+	{image_url: 'images/laser_beam.png', fire_sound_url:'sounds/shoot.wav', hit_sound_url: 'sounds/explode.wav', data: {id: 0, dmg: 1}}
+],
+entity_data = [
+	{image_url: 'images/simplefighter.png', data: 
+		{
+			angle: 90, 
+			angular_velocity_max: 180, 
+			angular_acceleration: 45, 
+			thrust_acceleration: 10, 
+			thrust_deceleration: 25, 
+			velocity_magnitude_max: 10, 
+			weapon_slots:[{enabled: true, weapons: [{x: -21, y: 0, weapon_id: 0}]}]
+		}
+	}
+],
+faction_data = [
+	{faction: 'player'},
+	{faction: 'enemy'}
+]
+num_images_loaded = 0,
+num_audio_loaded = 0,
+images_loaded = false,
+audio_loaded = false;
+
 var world,
 GSS = {
 	context: null,
@@ -32,6 +58,7 @@ GSS = {
 	keys: {},
 	mouse_info: {x: -1, y: -1, left_click: false, right_click: false, middle_click: false},
 	FPS: 1/60,
+	entities_index: 0,
 	entities: [],
 	entities_to_remove: [],
 	projectiles: [],
@@ -39,25 +66,35 @@ GSS = {
 	weapon_data: [],
 	entity_data: [],
 	image_data: [],
+	audio_data: [],
 	faction_data: [], // Holds collision filtering info,
 	
 	player: false,
 	follow_player: true
 };
 
+GSS.addEntity = function(faction_id, entity_data_index, is_player)
+{
+	var data = clone(GSS.entity_data[entity_data_index]),
+	new_entity;
+	if(is_player)
+	{
+		// Clear the current player
+		if(GSS.player !== undefined && GSS.player)
+			GSS.player.is_player = false;
+		
+		data.is_player = true;
+	}
+	
+	data.faction_id = faction_id;
+	
+	new_entity = new GSSEntity(GSS.entities_index++, data);
+	if(is_player)
+		GSS.player = new_entity;
+	
+	GSS.entities.push(new_entity);
+}
 
-/* Load this externally */
-var weapon_data = [
-	{image_src: 'images/laser_beam.png', data: {id: 0, dmg: 1}}
-],
-entity_data = [
-	{image_src: 'images/simplefighter.png', data: {is_player: true, angle: 90, angular_velocity_max: 180, angular_acceleration: 45, thrust_acceleration: 10, thrust_deceleration: 25, velocity_magnitude_max: 10, weapon_slots:[[{x: -21, y: 0, weapon_id: 0}]]}}
-],
-faction_data = [
-	{faction: 'player'},
-	{faction: 'enemy'}
-]
-images_loaded = 0;
 
 /**
 * Will assume the projectile array is sorted
@@ -98,6 +135,8 @@ GSS.cameraFollowPlayer = function(follow_player) {
 	GSS.follow_player = follow_player;
 }
 
+
+// A* algorithm implementation
 var node_size = 1000
 // From world center
 function getNodeDataAtPoint(x, y){
@@ -172,37 +211,77 @@ jQuery(function($){
 		faction.category = parseInt(hex_value, 16);
 	}
 	GSS.faction_data = faction_data;
-	console.log(GSS.faction_data);
 	
 	// Build list of images to load (avoid duplicates)
 	// Find weapon images to load
+	// Find audio to load
 	for(var i = 0; i < weapon_data.length; i++)
 	{
-		var img_src = weapon_data[i].image_src,
-		existing_index = -1;
+		var img_src = weapon_data[i].image_url,
+		fire_sound_url = weapon_data[i].fire_sound_url,
+		hit_sound_url = weapon_data[i].hit_sound_url,
+		image_existing_index = -1,
+		fire_audio_existing_index = -1,
+		hit_audio_existing_index = -1;
 		
+		// Find duplicate images
 		for(var a = 0; a < GSS.image_data.length; a++)
 		{
 			if(GSS.image_data[a].url == img_src)
 			{
-				existing_index = a;
+				image_existing_index = a;
 				break;
 			}
 		}
 		
-		if(existing_index == -1)
+		// Find duplicate fire audio
+		for(var af = 0; af < GSS.audio_data.length; af++)
+		{
+			if(GSS.audio_data[af].url == fire_sound_url)
+			{
+				fire_audio_existing_index = af;
+				break;
+			}		
+		}
+		
+		// Find duplicate hit audio
+		for(var ah = 0; ah < GSS.audio_data.length; ah++)
+		{
+			if(GSS.audio_data[ah].url == hit_sound_url)
+			{
+				hit_audio_existing_index = ah;
+				break;
+			}
+		}
+		
+		if(image_existing_index == -1)
 		{
 			GSS.image_data.push({url: img_src, index: GSS.image_data.length});
-			existing_index = GSS.image_data.length-1;
+			image_existing_index = GSS.image_data.length-1;
 		}
-		weapon_data[i].data.image_index = existing_index;
+		
+		if(fire_audio_existing_index == -1)
+		{
+			GSS.audio_data.push({url: fire_sound_url, index: GSS.audio_data.length});
+			fire_audio_existing_index = GSS.audio_data.length-1;
+		}
+		
+		if(hit_audio_existing_index == -1)
+		{
+			GSS.audio_data.push({url: hit_sound_url, index: GSS.audio_data.length});
+			hit_audio_existing_index = GSS.audio_data.length-1;
+		}
+		weapon_data[i].data.image_index = image_existing_index;
+		weapon_data[i].data.fire_sound_index = fire_audio_existing_index;
+		weapon_data[i].data.projectile_hit_sound_index = hit_audio_existing_index;
+		console.log(weapon_data[i],'check');
 		GSS.weapon_data.push(weapon_data[i]);
 	}
 	
 	// Find entity images to load
 	for(var i = 0; i < entity_data.length; i++)
 	{
-		var img_src = entity_data[i].image_src,
+		var img_src = entity_data[i].image_url,
 		existing_index = -1;
 		
 		for(var a = 0; a < GSS.image_data.length; a++)
@@ -220,10 +299,13 @@ jQuery(function($){
 			existing_index = GSS.image_data.length-1;
 		}
 		entity_data[i].data.image_index = existing_index;
+		GSS.entity_data.push(entity_data[i].data);
 	}
 	
-	console.log('test', GSS.image_data);
 	// Load images
+	if(GSS.image_data.length)
+		$(window).trigger('all_images_loaded');
+		
 	for(var i = 0; i < GSS.image_data.length; i++)
 	{
 		var texture_loader = new THREE.TextureLoader(),
@@ -245,25 +327,54 @@ jQuery(function($){
 				console.log(texture.image.src);
 				if(texture.image.src.search(GSS.image_data[id].url) != -1)
 				{
-					console.log('hit');
 					GSS.image_data[id].width = texture.image.width, 
 					GSS.image_data[id].height = texture.image.height, 
 					GSS.image_data[id].material =  material
 				}
 			}
 			
-			images_loaded++;
+			num_images_loaded++;
 			
-			if(images_loaded == GSS.image_data.length)
+			if(num_images_loaded == GSS.image_data.length)
 				$(window).trigger('all_images_loaded');
 		});
 	}
 	
+	// Load audio
+	if(GSS.audio_data.length)
+		$(window).trigger('all_audio_loaded');
+		
+	for(var i = 0; i < GSS.audio_data.length; i++)
+	{
+		var 
+		audio_data = GSS.audio_data[i];
+		audio = new Audio(),
+		audio.preload = 'auto';
+		audio.src = audio_data.url;
+		audio.oncanplaythrough = function() {
+			num_audio_loaded++;
+			if(num_audio_loaded == GSS.audio_data.length)
+				$(window).trigger('all_audio_loaded');
+		}
+	}
+
 
 	// Events
 	$(window).on('all_images_loaded', function(){
-		GSS.player = new GSSEntity(0, entity_data[0].data) 
-		GSS.entities.push(GSS.player);
+		images_loaded = true;
+		if(images_loaded && audio_loaded)
+			$(window).trigger('all_assets_loaded');
+	});
+	
+	$(window).on('all_audio_loaded', function(){
+		audio_loaded = true;
+		if(images_loaded && audio_loaded)
+			$(window).trigger('all_assets_loaded');
+	});
+	
+	$(window).on('all_assets_loaded', function(){
+		console.log('All assets loaded: Showing player');
+		GSS.addEntity(0, 0, true);
 	});
 	
 	$(window).on('resize', function(){
@@ -280,42 +391,46 @@ jQuery(function($){
 			b = contact.GetFixtureB(),
 			a_body = a.body,
 			b_body = b.body, 
+			a_GSSData,
+			b_GSSData,
+			a_type,
+			b_type,
+			a_GSSObject,
+			b_GSSObject,
 			GSSData,
-			type,
-			GSSObject;
+			type;
 			
 			if(a_body.GSSData !== undefined)
 			{
-				console.log('a', a_body.GSSData);
-				GSSData = a_body.GSSData;
-				type = GSSData.type;
-				GSSObject = GSSData.obj;
-				console.log(GSSObject);
-				switch(type)
-				{
-					case 'GSSProjectile':
-						GSSObject.destroy();
-						break;
-						
-					default: 
-						break;
-				}
+				a_GSSData = a_body.GSSData;
+				a_type = a_GSSData.type;
+				a_GSSObject = a_GSSData.obj;
 			}
 			
 			if(b_body.GSSData !== undefined)
 			{
-				GSSData = b_body.GSSData;
-				type = GSSData.type;
-				GSSObject = GSSData.obj;
-				switch(type)
+				b_GSSData = b_body.GSSData;
+				b_type = b_GSSData.type;
+				b_GSSObject = b_GSSData.obj;
+			}
+			
+			if(a_GSSData !== undefined && b_GSSData !== undefined)
+			{
+				// Projectiles cannot interact with each other
+				if((a_type == 'GSSProjectile' || b_type == 'GSSProjectile') && (a_type != 'GSSProjectile' && b_type != 'GSSProjectile') && (a_type == 'GSSEntity' || b_type == 'GSSEntity'))
 				{
-					case 'GSSProjectile':
-						
-						GSSObject.destroy();
-						break;
-						
-					default: 
-						break;
+					var projectile = a_type == 'GSSProjectile' ? a_GSSObject : b_GSSObject,
+					entity = a_type == 'GSSEntity' ? a_GSSObject : b_GSSObject;
+					
+					projectile.destroy();
+				}
+			}
+			else if(a_GSSData !== undefined || b_GSSData !== undefined)
+			{
+				GSSData = a_GSSData !== undefined ? a_GSSData : b_GSSData;
+				if(GSSData.type == 'GSSProjectile')
+				{
+					GSSData.obj.destroy();
 				}
 			}
 		}
@@ -406,11 +521,11 @@ jQuery(function($){
 		
 		if(GSS.follow_player && (GSS.player !== undefined && GSS.player))
 		{		
-			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.5*GSS.FPS);
+			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.10);
 		}
 		
-		
 		/*camera controls*/
+		/*
 		// Left
 		if(GSS.keys[37])
 			GSS.camera.position.x--;
@@ -425,8 +540,12 @@ jQuery(function($){
 		// Down
 		if(GSS.keys[40])
 			GSS.camera.position.y--;
-		
+		*/
 		// Clean up
+		while(GSS.entities_to_remove.length !== 0)
+		{
+		}
+		
 		while(GSS.projectiles_to_remove.length !== 0)
 		{
 			var projectile = GSS.projectiles_to_remove.pop(),
