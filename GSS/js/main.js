@@ -1,9 +1,9 @@
 /* Load this externally */
 var weapon_data = [
-	{image_url: 'images/laser_beam.png', fire_sound_url:'sounds/shoot.wav', hit_sound_url: 'sounds/explode.wav', data: {id: 0, dmg: 1}}
+	{image_url: 'images/laser_beam.png', image_frames: 1, fire_sound_url:'sounds/shoot.wav', hit_sound_url: 'sounds/explode.wav', data: {id: 0, dmg: 1}}
 ],
 entity_data = [
-	{image_url: 'images/simplefighter.png', data: 
+	{image_url: 'images/simplefighter.png', image_frames: 2, image_frame_rate: 0.5, data: 
 		{
 			angle: 90, 
 			angular_velocity_max: 180, 
@@ -179,10 +179,12 @@ GSS = {
 		
 				if(existing_index == -1)
 				{
-					GSS.image_data.push({url: img_src, index: GSS.image_data.length});
+					GSS.image_data.push({url: img_src, index: GSS.image_data.length, frames: entity_data[e].image_frames});
 					existing_index = GSS.image_data.length-1;
 				}
 				entity_data[e].data.image_index = existing_index;
+				entity_data[e].data.image_frames = entity_data[e].image_frames;
+				entity_data[e].data.image_frame_rate = entity_data[e].image_frame_rate;
 				GSS.entity_data.push(entity_data[e].data);
 			}
 			
@@ -230,7 +232,7 @@ GSS = {
 		
 				if(image_existing_index == -1)
 				{
-					GSS.image_data.push({url: projectile_image_url, index: GSS.image_data.length});
+					GSS.image_data.push({url: projectile_image_url, index: GSS.image_data.length, frames: weapon_data[w].image_frames});
 					image_existing_index = GSS.image_data.length-1;
 				}
 		
@@ -258,26 +260,32 @@ GSS = {
 				window.dispatchEvent(event_images_loaded);
 	
 			function loadTexture(texture){
+				var image_index = -1;
+				for(var id = 0; id < GSS.image_data.length; id++)
+				{
+					if(texture.image.src.search(GSS.image_data[id].url) != -1)
+						image_index = id;
+				}
+				
+				if(image_index == -1)
+					return;
+				
 				// Prevents blurry sprites
 				texture.anisotropy = 0;
 				texture.minFilter = THREE.NearestFilter;
 				texture.magFilter = THREE.NearestFilter;
-	
+				
+				
+				texture.repeat.x = (texture.image.width/GSS.image_data[image_index].frames)/texture.image.width;
+				console.log( texture.image.width/(texture.image.width/GSS.image_data[image_index].frames));
 				// Create material
 				material = new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true});
 				material.side = THREE.DoubleSide;
-	
-				for(var id = 0; id < GSS.image_data.length; id++)
-				{
-					console.log(texture.image.src);
-					if(texture.image.src.search(GSS.image_data[id].url) != -1)
-					{
-						GSS.image_data[id].width = texture.image.width;
-						GSS.image_data[id].height = texture.image.height;
-						GSS.image_data[id].material =  material;
-					}
-				}
-	
+				
+				GSS.image_data[image_index].width = texture.image.width;
+				GSS.image_data[image_index].height = texture.image.height;
+				GSS.image_data[image_index].material =  material;
+				
 				num_images_loaded++;
 	
 				if(num_images_loaded == GSS.image_data.length)

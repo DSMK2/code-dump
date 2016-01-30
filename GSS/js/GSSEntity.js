@@ -27,7 +27,9 @@ GSSEntity.defaults = {
 	angular_velocity_max: 360,
 	lock_rotation: false,
 	follow_mouse: false,  // No acceleration 1:1 mouse tracking
-	image_index: 0
+	image_index: 0,
+	image_frames: 1,
+	image_frame_rate: 0
 }
 
 /**
@@ -44,6 +46,11 @@ function GSSEntity(index, options) {
 	
 	// BEGIN: GSSEntity Data
 	this.mesh_data = GSS.image_data[options.image_index];
+	this.image_frames = options.image_frames;
+	this.image_frame_rate = options.image_frame_rate;
+	this.image_frame_next = Date.now()+1000*this.image_frame_rate;
+	this.image_frame_current = 0;
+	
 	this.polygons;
 	this.id = index;
 	this.is_player = options.is_player;
@@ -95,7 +102,7 @@ function GSSEntity(index, options) {
 	// END: Movement stats
 	
 	// BEGIN: THREE.js
-	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.mesh_data.width, this.mesh_data.height), this.mesh_data.material);
+	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.mesh_data.width/this.image_frames, this.mesh_data.height), this.mesh_data.material);
 	GSS.scene.add(this.mesh_plane);
 	// END: THREE.js
 	
@@ -114,7 +121,7 @@ function GSSEntity(index, options) {
 	entity_body_fixture.restitution = 0;
 	entity_body_fixture.filter.groupIndex = -GSS.faction_data[options.faction_id].category; // Same faction does not collide with each other
 	entity_body_fixture.shape = new b2PolygonShape();
-	entity_body_fixture.shape.SetAsBoxXY(this.mesh_data.width/2/GSS.PTM, this.mesh_data.height/2/GSS.PTM);
+	entity_body_fixture.shape.SetAsBoxXY(this.mesh_data.width/this.image_frames/2/GSS.PTM, this.mesh_data.height/2/GSS.PTM);
 	
 	this.entity_body = GSS.world.CreateBody(entity_body_def);
 	this.entity_body.CreateFixtureFromDef(entity_body_fixture);
@@ -319,7 +326,15 @@ GSSEntity.prototype = {
 			}
 			// END: Angular Movement (Mouse Tracking)
 		}
-
+		if(Date.now() >= this.image_frame_next)
+		{
+			
+			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
+			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(this.image_frame_current+1)))/this.mesh_data.width;
+			this.image_frame_next = Date.now()+1000*this.image_frame_rate;
+			console.log('hit', this.mesh_plane.material.map.offset.x);
+		}
+		
 		this.mesh_plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
 		this.mesh_plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
 		this.mesh_plane.rotation.z = this.entity_body.GetAngle();
