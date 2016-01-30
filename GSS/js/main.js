@@ -371,7 +371,7 @@ GSS = {
 			
 			b2Vec2.Normalize(perpend_vel, perpend_vel);
 			b2Vec2.MulScalar(perpend_vel, perpend_vel, -100);
-			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x-perpend_vel.x, y+GSS.player.mesh_plane.position.y-perpend_vel.y, GSS.camera.position.z), 0.5*GSS.FPS);
+			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.5*GSS.FPS);
 		}
 		
 		// Clean up

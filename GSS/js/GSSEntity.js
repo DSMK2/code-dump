@@ -178,10 +178,13 @@ GSSEntity.prototype = {
 		move_angle = 0,
 		
 		// Angle movement
+		move_mouse_x = -(GSS.mouse_info.x-GSS.canvas.clientWidth/2)/GSS.PTM,
+		move_mouse_y = (GSS.mouse_info.y-GSS.canvas.clientHeight/2)/GSS.PTM,
 		offset_mouse_x = (GSS.mouse_info.x-GSS.canvas.clientWidth/2+GSS.camera.position.x)/GSS.PTM,
 		offset_mouse_y = -(GSS.mouse_info.y-GSS.canvas.clientHeight/2-GSS.camera.position.y)/GSS.PTM,
 		angle_current = this.entity_body.GetAngle(),
 		angle_target = this.getAngleToPosition(offset_mouse_x, offset_mouse_y),
+		move_target = Math.atan2(move_mouse_y, move_mouse_x),
 		angle_delta,
 		dir,
 		angular_acceleration_needed,
@@ -212,27 +215,27 @@ GSSEntity.prototype = {
 			if(up)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ?  135*DEGTORAD : angle_current-135*DEGTORAD;
+					move_angle = 135*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : angle_current+135*DEGTORAD;
+					move_angle = 45*DEGTORAD;
 				else
-					move_angle = this.movement_relative_to_screen ? 90*DEGTORAD : angle_current+180*DEGTORAD;
+					move_angle = 90*DEGTORAD;
 			}
 			else if(down)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : angle_current-45*DEGTORAD;
+					move_angle =225*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : angle_current+45*DEGTORAD;
+					move_angle = 315*DEGTORAD;
 				else
-					move_angle = this.movement_relative_to_screen ? 270*DEGTORAD : angle_current;
+					move_angle = 270*DEGTORAD;
 			}
 			else
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 180*DEGTORAD : angle_current-90*DEGTORAD;
+					move_angle = 180*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 0*DEGTORAD : angle_current+90*DEGTORAD;
+					move_angle = 0*DEGTORAD;
 			}
 			
 			if(fire)

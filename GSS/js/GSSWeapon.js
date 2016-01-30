@@ -36,7 +36,7 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	this.projectile_body.GSS_parent = this;
 	
 	var new_velocity = new b2Vec2(-options.velocity_magnitude*Math.cos(options.angle), -options.velocity_magnitude*Math.sin(options.angle));
-	b2Vec2.Add(new_velocity, new_velocity, this.parent.entity_body.GetLinearVelocity());
+	//b2Vec2.Add(new_velocity, new_velocity, this.parent.entity_body.GetLinearVelocity());
 	this.velocity = new_velocity;
 	console.log(this.velocity);
 	this.projectile_body.SetLinearVelocity(this.velocity);
