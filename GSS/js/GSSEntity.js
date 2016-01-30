@@ -10,7 +10,7 @@ GSSEntity.defaults = {
 	/*
 	Example: {x: 0, y: 0, weapon: <GSSWeapon>, group: 0} and so on
 	*/
-	weapon_slots: [],
+	weapons: [],
 	power_max: 100,
 	power_regen: 10,
 	
@@ -37,7 +37,7 @@ polygons array used to build body (in PX)
 bool if controlled by player (controls override)
 */
 function GSSEntity(index, options) {
-	if(GSS.world === undefined)
+	if(GSS.world === undefined || GSS.renderer === undefined)
 		return;
 	
 	options = extend(GSSEntity.defaults, options);
@@ -51,18 +51,14 @@ function GSSEntity(index, options) {
 	this.mark_for_delete = false;
 	
 	// Weapons handling
-	this.weapon_slots = options.weapon_slots.slice(0);
-	for(var g = 0; g < options.weapon_slots.length; g++)
+	this.weapons = options.weapons.slice(0);
+	for(var w = 0; w < options.weapons.length; w++)
 	{
-		var weapon_group = options.weapon_slots[g];
-		for(var w = 0; w < weapon_group.weapons.length; w++)
-		{
-			var weapon_data = clone(GSS.weapon_data[weapon_group.weapons[w].weapon_id]);
-			weapon_data.data.x = weapon_group.weapons[w].x;
-			weapon_data.data.y = weapon_group.weapons[w].y;
+		var weapon_data = clone(GSS.weapon_data[this.weapons[w].weapon_id]);
+			weapon_data.data.x = this.weapons[w].x;
+			weapon_data.data.y = this.weapons[w].y;
 			weapon_data.data.faction_id = this.faction;
-			weapon_group.weapons[w].weapon = new GSSWeapon(this, weapon_data);
-		}
+			this.weapons[w].weapon = new GSSWeapon(this, weapon_data);
 	}
 	
 	/*
@@ -135,17 +131,9 @@ GSSEntity.prototype = {
 	fireWeapons: function(){
 		var current_weapon_group;
 		// Fires all weapon groups at once, depending on enabled or disabled
-		for(var g = 0; g < this.weapon_slots.length; g++)
+		for(var w = 0; w < this.weapons.length; w++)
 		{
-			current_weapon_group = this.weapon_slots[g];
-			if(current_weapon_group.enabled)
-			{
-				for(var w = 0; w < current_weapon_group.weapons.length; w++)
-				{
-					if(current_weapon_group.weapons[w].weapon != undefined)
-						current_weapon_group.weapons[w].weapon.fire();
-				}
-			}
+			this.weapons[w].weapon.fire();
 		}
 	},
 	setAngle: function(new_angle){			
@@ -190,8 +178,8 @@ GSSEntity.prototype = {
 		move_angle = 0,
 		
 		// Angle movement
-		offset_mouse_x = (GSS.mouse_info.x-GSS.context.width()/2+GSS.camera.position.x)/GSS.PTM,
-		offset_mouse_y = -(GSS.mouse_info.y-GSS.context.height()/2-GSS.camera.position.y)/GSS.PTM,
+		offset_mouse_x = (GSS.mouse_info.x-GSS.canvas.clientWidth/2+GSS.camera.position.x)/GSS.PTM,
+		offset_mouse_y = -(GSS.mouse_info.y-GSS.canvas.clientHeight/2-GSS.camera.position.y)/GSS.PTM,
 		angle_current = this.entity_body.GetAngle(),
 		angle_target = this.getAngleToPosition(offset_mouse_x, offset_mouse_y),
 		angle_delta,
