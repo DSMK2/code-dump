@@ -182,7 +182,7 @@ GSS = {
 					GSS.image_data.push({url: img_src, index: GSS.image_data.length});
 					existing_index = GSS.image_data.length-1;
 				}
-				entity_data[i].data.image_index = existing_index;
+				entity_data[e].data.image_index = existing_index;
 				GSS.entity_data.push(entity_data[e].data);
 			}
 			
@@ -365,8 +365,13 @@ GSS = {
 		}
 		
 		if(GSS.flag_follow_player && (GSS.player !== undefined && GSS.player))
-		{		
-			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.10);
+		{	
+			var vel = GSS.player.entity_body.GetLinearVelocity(),
+			perpend_vel = new b2Vec2(-vel.y, vel.x);
+			
+			b2Vec2.Normalize(perpend_vel, perpend_vel);
+			b2Vec2.MulScalar(perpend_vel, perpend_vel, -100);
+			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x-perpend_vel.x, y+GSS.player.mesh_plane.position.y-perpend_vel.y, GSS.camera.position.z), 0.5*GSS.FPS);
 		}
 		
 		// Clean up
