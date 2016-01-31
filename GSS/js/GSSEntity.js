@@ -29,7 +29,8 @@ GSSEntity.defaults = {
 	follow_mouse: false,  // No acceleration 1:1 mouse tracking
 	image_index: 0,
 	image_frames: 1,
-	image_frame_rate: 0
+	image_frame_rate: 0,
+	animate_on_fire: false
 }
 
 /**
@@ -50,6 +51,7 @@ function GSSEntity(index, options) {
 	this.image_frame_rate = options.image_frame_rate;
 	this.image_frame_next = Date.now()+1000*this.image_frame_rate;
 	this.image_frame_current = 0;
+	this.animate_on_fire = options.animate_on_fire;
 	
 	this.polygons;
 	this.id = index;
@@ -326,13 +328,24 @@ GSSEntity.prototype = {
 			}
 			// END: Angular Movement (Mouse Tracking)
 		}
-		if(Date.now() >= this.image_frame_next)
+		
+		if(Date.now() >= this.image_frame_next && !this.animate_on_fire)
 		{
 			
 			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
 			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(this.image_frame_current+1)))/this.mesh_data.width;
 			this.image_frame_next = Date.now()+1000*this.image_frame_rate;
-			console.log('hit', this.mesh_plane.material.map.offset.x);
+		}
+		else if(Date.now() >= this.image_frame_next && this.animate_on_fire && fire)
+		{
+			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
+			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(this.image_frame_current+1)))/this.mesh_data.width;
+			this.image_frame_next = Date.now()+1000*this.image_frame_rate;
+		}
+		else if(this.animate_on_fire && !fire)
+		{
+			this.image_frame_current = 0;
+			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(0+1)))/this.mesh_data.width;
 		}
 		
 		this.mesh_plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;

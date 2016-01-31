@@ -1,10 +1,31 @@
 /* Load this externally */
 var weapon_data = [
-	{image_url: 'images/laser_beam.png', image_frames: 1, fire_sound_url:'sounds/shoot.wav', hit_sound_url: 'sounds/explode.wav', data: {id: 0, dmg: 1}}
+	{
+		projectile_image: {
+			image_url: 'images/laser_beam.png', 
+			image_frames: 1
+		},
+		projectile_hit_image: {
+			image_url: 'images/projectile_hit.png', 
+			image_frames: 1
+		}, 
+		fire_sound_url:'sounds/shoot.wav', 
+		hit_sound_url: 'sounds/explode.wav', 
+		data: {
+			id: 0, 
+			dmg: 1
+		}
+	}
 ],
 entity_data = [
-	{image_url: 'images/simplefighter.png', image_frames: 2, image_frame_rate: 0.5, data: 
-		{
+	{
+		entity_image: {
+			image_url: 'images/simplefighter.png', 
+			image_frames: 2, 
+			image_frame_rate: 0.1, 
+			animate_on_fire: true
+		}, 
+		data: {
 			angle: 90, 
 			angular_velocity_max: 180, 
 			angular_acceleration: 45, 
@@ -165,12 +186,14 @@ GSS = {
 			// Find entity images to load
 			for(var e = 0; e < entity_data.length; e++)
 			{
-				var img_src = entity_data[e].image_url,
+				var 
+				current_entity_data = entity_data[e]
+				img_src = current_entity_data.entity_image.image_url,
 				existing_index = -1;
 		
 				for(var a = 0; a < GSS.image_data.length; a++)
 				{
-					if(GSS.image_data[a].url == img_src)
+					if(current_entity_data.entity_image.url == img_src)
 					{
 						existing_index = a;
 						break;
@@ -179,13 +202,14 @@ GSS = {
 		
 				if(existing_index == -1)
 				{
-					GSS.image_data.push({url: img_src, index: GSS.image_data.length, frames: entity_data[e].image_frames});
+					GSS.image_data.push({url: img_src, index: GSS.image_data.length, frames: current_entity_data.entity_image.image_frames});
 					existing_index = GSS.image_data.length-1;
 				}
-				entity_data[e].data.image_index = existing_index;
-				entity_data[e].data.image_frames = entity_data[e].image_frames;
-				entity_data[e].data.image_frame_rate = entity_data[e].image_frame_rate;
-				GSS.entity_data.push(entity_data[e].data);
+				current_entity_data.data.image_index = existing_index;
+				current_entity_data.data.image_frames = current_entity_data.entity_image.image_frames;
+				current_entity_data.data.image_frame_rate = current_entity_data.entity_image.image_frame_rate;
+				current_entity_data.data.animate_on_fire = current_entity_data.entity_image.animate_on_fire;
+				GSS.entity_data.push(current_entity_data.data);
 			}
 			
 			// Build list of images to load (avoid duplicates)
@@ -193,9 +217,11 @@ GSS = {
 			// Find audio to load
 			for(var w = 0; w < weapon_data.length; w++)
 			{
-				var projectile_image_url = weapon_data[w].image_url,
-				fire_sound_url = weapon_data[w].fire_sound_url,
-				hit_sound_url = weapon_data[w].hit_sound_url,
+				var 
+				current_weapon_data = weapon_data[w],
+				projectile_image_url = current_weapon_data.projectile_image.image_url,
+				fire_sound_url = current_weapon_data.fire_sound_url,
+				hit_sound_url = current_weapon_data.hit_sound_url,
 				image_existing_index = -1,
 				fire_audio_existing_index = -1,
 				hit_audio_existing_index = -1;
@@ -232,7 +258,7 @@ GSS = {
 		
 				if(image_existing_index == -1)
 				{
-					GSS.image_data.push({url: projectile_image_url, index: GSS.image_data.length, frames: weapon_data[w].image_frames});
+					GSS.image_data.push({url: projectile_image_url, index: GSS.image_data.length, frames: current_weapon_data.projectile_image.image_frames});
 					image_existing_index = GSS.image_data.length-1;
 				}
 		
@@ -247,11 +273,10 @@ GSS = {
 					GSS.audio_data.push({url: hit_sound_url, index: GSS.audio_data.length});
 					hit_audio_existing_index = GSS.audio_data.length-1;
 				}
-				weapon_data[w].data.projectile_image_index = image_existing_index;
-				weapon_data[w].data.fire_sound_index = fire_audio_existing_index;
-				weapon_data[w].data.projectile_hit_sound_index = hit_audio_existing_index;
-				console.log(weapon_data[w],'check');
-				GSS.weapon_data.push(weapon_data[w]);
+				current_weapon_data.data.projectile_image_index = image_existing_index;
+				current_weapon_data.data.fire_sound_index = fire_audio_existing_index;
+				current_weapon_data.data.projectile_hit_sound_index = hit_audio_existing_index;
+				GSS.weapon_data.push(current_weapon_data);
 			}
 				
 			console.log(GSS.image_data, GSS.weapon_data);
