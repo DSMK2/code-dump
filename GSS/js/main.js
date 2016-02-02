@@ -1,4 +1,10 @@
 /* Load this externally */
+/* Data setup 
+{
+	assets
+	data
+}
+*/
 var weapon_data = [
 	{
 		projectile_image: {
@@ -22,7 +28,7 @@ entity_data = [
 		entity_image: {
 			image_url: 'images/simplefighter.png', 
 			image_frames: 2, 
-			image_frame_rate: 0.1, 
+			image_frame_rate: 100, 
 			animate_on_fire: true
 		}, 
 		data: {
@@ -144,7 +150,8 @@ GSS = {
 						b_type = b_GSSData.type;
 						b_GSSObject = b_GSSData.obj;
 					}
-			
+				
+					// Do stuff if the projectile hits a GSS_ thing
 					if(a_GSSData !== undefined && b_GSSData !== undefined)
 					{
 						// Projectiles cannot interact with each other
@@ -153,19 +160,61 @@ GSS = {
 							var projectile = a_type == 'GSSProjectile' ? a_GSSObject : b_GSSObject,
 							entity = a_type == 'GSSEntity' ? a_GSSObject : b_GSSObject;
 					
-							projectile.destroy();
+							projectile.destroy(true);
 						}
 					}
+					// Do stuff if it hits something
 					else if(a_GSSData !== undefined || b_GSSData !== undefined)
 					{
 						GSSData = a_GSSData !== undefined ? a_GSSData : b_GSSData;
 						if(GSSData.type == 'GSSProjectile')
 						{
-							GSSData.obj.destroy();
+							GSSData.obj.destroy(true);
 						}
 					}
 				}
 			});
+			
+			// Load assets
+			/* Pre-creates Materials per image */
+			function loadTexture(texture){
+				var image_index = -1;
+				for(var id = 0; id < GSS.image_data.length; id++)
+				{
+					if(texture.image.src.search(GSS.image_data[id].url) != -1)
+						image_index = id;
+				}
+				
+				if(image_index == -1)
+					return;
+				
+				// Prevents blurry sprites
+				texture.anisotropy = 0;
+				texture.minFilter = THREE.NearestFilter;
+				texture.magFilter = THREE.NearestFilter;
+				
+				
+				texture.repeat.x = (texture.image.width/GSS.image_data[image_index].frames)/texture.image.width;
+				// Create material
+				material = new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true});
+				material.side = THREE.DoubleSide;
+				
+				GSS.image_data[image_index].width = texture.image.width;
+				GSS.image_data[image_index].height = texture.image.height;
+				GSS.image_data[image_index].material =  material;
+				
+				num_images_loaded++;
+	
+				if(num_images_loaded == GSS.image_data.length)
+					window.dispatchEvent(GSS.event_images_loaded);
+			}
+			
+			/* Ensures all audio assets can play */
+			function loadAudio(){
+				num_audio_loaded++;
+				if(num_audio_loaded == GSS.audio_data.length)
+					window.dispatchEvent(GSS.event_audio_loaded);
+			}
 			
 			// Process factions (for collision filters) up to 16?
 			for(var i = 0; i < faction_data.length; i++)
@@ -190,7 +239,8 @@ GSS = {
 				current_entity_data = entity_data[e]
 				img_src = current_entity_data.entity_image.image_url,
 				existing_index = -1;
-		
+				
+				// Find duplicate images
 				for(var a = 0; a < GSS.image_data.length; a++)
 				{
 					if(current_entity_data.entity_image.url == img_src)
@@ -205,10 +255,12 @@ GSS = {
 					GSS.image_data.push({url: img_src, index: GSS.image_data.length, frames: current_entity_data.entity_image.image_frames});
 					existing_index = GSS.image_data.length-1;
 				}
+				
 				current_entity_data.data.image_index = existing_index;
 				current_entity_data.data.image_frames = current_entity_data.entity_image.image_frames;
 				current_entity_data.data.image_frame_rate = current_entity_data.entity_image.image_frame_rate;
 				current_entity_data.data.animate_on_fire = current_entity_data.entity_image.animate_on_fire;
+				
 				GSS.entity_data.push(current_entity_data.data);
 			}
 			
@@ -220,9 +272,11 @@ GSS = {
 				var 
 				current_weapon_data = weapon_data[w],
 				projectile_image_url = current_weapon_data.projectile_image.image_url,
+				projectile_hit_image_url = current_weapon_data.projectile_hit_image.image_url,
 				fire_sound_url = current_weapon_data.fire_sound_url,
 				hit_sound_url = current_weapon_data.hit_sound_url,
 				image_existing_index = -1,
+				projectile_hit_image_index = -1,
 				fire_audio_existing_index = -1,
 				hit_audio_existing_index = -1;
 		
@@ -232,6 +286,16 @@ GSS = {
 					if(GSS.image_data[a].url == projectile_image_url)
 					{
 						image_existing_index = a;
+						break;
+					}
+				}
+				
+				// Find duplicate projectile hit images
+				for(var a = 0; a < GSS.image_data.length; a++)
+				{
+					if(GSS.image_data[a].url == projectile_hit_image_url)
+					{
+						projectile_hit_image_index = a;
 						break;
 					}
 				}
@@ -262,6 +326,12 @@ GSS = {
 					image_existing_index = GSS.image_data.length-1;
 				}
 		
+				if(projectile_hit_image_index == -1)
+				{
+					GSS.image_data.push({url: projectile_hit_image_url, index: GSS.image_data.length, frames: current_weapon_data.projectile_hit_image.image_frames});
+					projectile_hit_image_index = GSS.image_data.length-1;
+				}
+			
 				if(fire_audio_existing_index == -1)
 				{
 					GSS.audio_data.push({url: fire_sound_url, index: GSS.audio_data.length});
@@ -273,50 +343,19 @@ GSS = {
 					GSS.audio_data.push({url: hit_sound_url, index: GSS.audio_data.length});
 					hit_audio_existing_index = GSS.audio_data.length-1;
 				}
+				
 				current_weapon_data.data.projectile_image_index = image_existing_index;
+				current_weapon_data.data.projectile_hit_image_index = projectile_hit_image_index;
 				current_weapon_data.data.fire_sound_index = fire_audio_existing_index;
 				current_weapon_data.data.projectile_hit_sound_index = hit_audio_existing_index;
+				
 				GSS.weapon_data.push(current_weapon_data);
 			}
 				
-			console.log(GSS.image_data, GSS.weapon_data);
-			// Load images
+			// Load images if empty (this should rarely happen)
 			if(GSS.image_data.length === 0)
 				window.dispatchEvent(event_images_loaded);
-	
-			function loadTexture(texture){
-				var image_index = -1;
-				for(var id = 0; id < GSS.image_data.length; id++)
-				{
-					if(texture.image.src.search(GSS.image_data[id].url) != -1)
-						image_index = id;
-				}
-				
-				if(image_index == -1)
-					return;
-				
-				// Prevents blurry sprites
-				texture.anisotropy = 0;
-				texture.minFilter = THREE.NearestFilter;
-				texture.magFilter = THREE.NearestFilter;
-				
-				
-				texture.repeat.x = (texture.image.width/GSS.image_data[image_index].frames)/texture.image.width;
-				console.log( texture.image.width/(texture.image.width/GSS.image_data[image_index].frames));
-				// Create material
-				material = new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true});
-				material.side = THREE.DoubleSide;
-				
-				GSS.image_data[image_index].width = texture.image.width;
-				GSS.image_data[image_index].height = texture.image.height;
-				GSS.image_data[image_index].material =  material;
-				
-				num_images_loaded++;
-	
-				if(num_images_loaded == GSS.image_data.length)
-					window.dispatchEvent(GSS.event_images_loaded);
-			}
-	
+			
 			for(var i = 0; i < GSS.image_data.length; i++)
 			{
 				var texture_loader = new THREE.TextureLoader(),
@@ -325,15 +364,9 @@ GSS = {
 				texture_loader.load(image_data.url, loadTexture);
 			}
 	
-			// Load audio
-			if(GSS.audio_data.length)
+			// Load audio if empty
+			if(GSS.audio_data.length === 0)
 				window.dispatchEvent(GSS.event_audio_loaded);
-	
-			function loadAudio(){
-				num_audio_loaded++;
-				if(num_audio_loaded == GSS.audio_data.length)
-					window.dispatchEvent(GSS.event_audio_loaded);
-			}
 	
 			for(var i = 0; i < GSS.audio_data.length; i++)
 			{

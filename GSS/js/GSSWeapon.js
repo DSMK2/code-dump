@@ -82,7 +82,7 @@ GSSProjectile.prototype = {
 		GSS.context.translate(-x, -y);
 	},
 	/* Remove projectile eligibility from rendering and simulation */
-	destroy: function(){
+	destroy: function(with_effect){
 		if(this.mark_for_delete)
 			return; 
 			
@@ -91,11 +91,12 @@ GSSProjectile.prototype = {
 		GSS.world.DestroyBody(this.projectile_body);
 		GSS.projectiles_to_remove.push(this);
 		
-		/*
-		var audio = new Audio();
-		audio.src = this.projectile_hit_sound_data.url;
-		audio.play();
-		*/
+		if(with_effect !== undefined && with_effect)
+		{
+			var audio = new Audio();
+			audio.src = this.projectile_hit_sound_data.url;
+			audio.play();
+		}
 	}
 }
 
@@ -141,6 +142,7 @@ function GSSWeapon(GSSEntity_parent, options){
 	console.log(options);
 	// Projectile Image
 	this.image = GSS.image_data[options.projectile_image_index];
+	this.hit_image = GSS.image_data[options.projectile_hit_image_index];
 	
 	// Audio
 	this.audio = GSS.audio_data[options.fire_sound_index];
@@ -211,7 +213,7 @@ GSSWeapon.prototype = {
 			if(this.spread_oscilliate && this.projectiles_per_shot > 1)
 			{
 				target_angle =  parent_angle+this.increment_current*this.increment-this.spread/2;
-				GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+				GSS.projectiles.push(new GSSProjectile(this.image, this.hit_image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
 					{
 						angle: target_angle, 
 						velocity_magnitude: this.velocity, 
@@ -253,7 +255,7 @@ GSSWeapon.prototype = {
 				target_angle =  parent_angle+(this.spread_fixed ? this.increment*i-this.spread/2*(this.projectiles_per_shot != 1) : (this.spread*Math.random()-this.spread/2));
 				for(var i = 0; i < this.projectiles_per_shot; i++)
 				{
-					GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+					GSS.projectiles.push(new GSSProjectile(this.image, this.hit_image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
 						{
 							angle: target_angle, 
 							velocity_magnitude: this.velocity, 

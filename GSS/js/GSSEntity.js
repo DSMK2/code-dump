@@ -49,7 +49,7 @@ function GSSEntity(index, options) {
 	this.mesh_data = GSS.image_data[options.image_index];
 	this.image_frames = options.image_frames;
 	this.image_frame_rate = options.image_frame_rate;
-	this.image_frame_next = Date.now()+1000*this.image_frame_rate;
+	this.image_frame_next = Date.now()+this.image_frame_rate;
 	this.image_frame_current = 0;
 	this.animate_on_fire = options.animate_on_fire;
 	
@@ -224,27 +224,27 @@ GSSEntity.prototype = {
 			if(up)
 			{
 				if(left)
-					move_angle = 135*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 135*DEGTORAD : move_target-135*DEGTORAD;
 				else if(right)
-					move_angle = 45*DEGTORAD;
-				else
-					move_angle = 90*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : move_target+135*DEGTORAD;
+				else 
+					move_angle = this.movement_relative_to_screen ? 90*DEGTORAD : move_target+180*DEGTORAD;
 			}
 			else if(down)
 			{
 				if(left)
-					move_angle =225*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : move_target-45*DEGTORAD;
 				else if(right)
-					move_angle = 315*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : move_target+45*DEGTORAD;
 				else
-					move_angle = 270*DEGTORAD;
-			}
+					move_angle = this.movement_relative_to_screen ? 270*DEGTORAD : move_target;
+			} 
 			else
 			{
 				if(left)
-					move_angle = 180*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 180*DEGTORAD : move_target-90*DEGTORAD;
 				else if(right)
-					move_angle = 0*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 0*DEGTORAD : move_target+90*DEGTORAD;
 			}
 			
 			if(fire)
@@ -334,13 +334,13 @@ GSSEntity.prototype = {
 			
 			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
 			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(this.image_frame_current+1)))/this.mesh_data.width;
-			this.image_frame_next = Date.now()+1000*this.image_frame_rate;
+			this.image_frame_next = Date.now()+this.image_frame_rate;
 		}
 		else if(Date.now() >= this.image_frame_next && this.animate_on_fire && fire)
 		{
 			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
 			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(this.image_frame_current+1)))/this.mesh_data.width;
-			this.image_frame_next = Date.now()+1000*this.image_frame_rate;
+			this.image_frame_next = Date.now()+this.image_frame_rate;
 		}
 		else if(this.animate_on_fire && !fire)
 		{
