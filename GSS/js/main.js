@@ -13,8 +13,10 @@ var weapon_data = [
 		},
 		projectile_hit_effect_data: {
 			image_url: 'images/projectile_hit.png', 
-			image_frames: 1,
-			lifetime: 500
+			image_frames: 5,
+			lifetime: 200,
+			image_frame_rate: 500,
+			animate_with_lifetime: true
 		}, 
 		fire_sound_url:'sounds/shoot.wav', 
 		hit_sound_url: 'sounds/explode.wav', 
@@ -201,6 +203,7 @@ GSS = {
 				// Create material
 				material = new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true});
 				material.side = THREE.DoubleSide;
+				GSS.image_data[image_index].texture = texture;
 				
 				GSS.image_data[image_index].width = texture.image.width;
 				GSS.image_data[image_index].height = texture.image.height;

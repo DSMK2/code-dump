@@ -333,13 +333,13 @@ GSSEntity.prototype = {
 		{
 			
 			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
-			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(this.image_frame_current+1)))/this.mesh_data.width;
+			this.mesh_plane.material.map.offset.x = this.image_frame_current/this.image_frames;
 			this.image_frame_next = Date.now()+this.image_frame_rate;
 		}
 		else if(Date.now() >= this.image_frame_next && this.animate_on_fire && fire)
 		{
 			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
-			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(this.image_frame_current+1)))/this.mesh_data.width;
+			this.mesh_plane.material.map.offset.x = this.image_frame_current/this.image_frames;
 			this.image_frame_next = Date.now()+this.image_frame_rate;
 		}
 		else if(this.animate_on_fire && !fire)
