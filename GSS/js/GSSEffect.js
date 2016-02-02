@@ -4,7 +4,7 @@
 
 GSSEffect.id = 0;
 GSSEffect.defaults = {
-	image_id: 0,
+	image_index: 0,
 	image_frames: 0,
 	image_frame_rate: 0.5,
 	animate_with_lifetime : false,
@@ -14,11 +14,12 @@ GSSEffect.defaults = {
 };
 
 function GSSEffect(options){
-	extend(GSSEffect.defaults, options);
-	
+	options = extend(GSSEffect.defaults, options);
+
 	this.mark_for_delete = false;
+	this.id = GSSEffect.id;
 	
-	this.mesh_data = GSS.image_data[options.image_id];
+	this.mesh_data = GSS.image_data[options.image_index];
 	this.image_frames = options.image_frames;
 	this.image_frame_current = 0;
 	if(options.animate_with_lifetime)
@@ -34,6 +35,9 @@ function GSSEffect(options){
 	this.mesh_plane.position.y = options.y;
 	GSS.scene.add(this.mesh_plane);
 	// END: THREE.js
+	
+	GSSEffect.id++;
+
 }
 
 GSSEffect.prototype = {
@@ -57,6 +61,7 @@ GSSEffect.prototype = {
 		
 		GSS.scene.remove(this.mesh_plane);
 		
+		GSS.effects_to_remove.push(this);
 		this.mark_for_delete = true;
 	}
 }

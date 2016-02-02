@@ -10,7 +10,8 @@ GSSProjectile.defaults = {
 	y: 0, 
 	velocity_magnitude: 1,
 	lifetime: 1000,
-	projectile_hit_sound_index: 0
+	projectile_hit_sound_index: 0,
+	projectile_hit_effect_data: false
 };
 
 
@@ -24,9 +25,10 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	
 	this.lifetime_end = Date.now()+options.lifetime;
 	this.mark_for_delete = false;
-	console.log(options.projectile_hit_sound_index);
+
 	this.projectile_hit_sound_data = GSS.audio_data[options.projectile_hit_sound_index];
-	
+	this.projectile_hit_effect_data = options.projectile_hit_effect_data;
+	console.log(this.projectile_hit_effect_data);
 	this.projectile_body_def = body_def;
 	this.projectile_body_def.angle = options.angle;
 	this.projectile_body_def.position = new b2Vec2(options.x, options.y);
@@ -96,6 +98,9 @@ GSSProjectile.prototype = {
 			var audio = new Audio();
 			audio.src = this.projectile_hit_sound_data.url;
 			audio.play();
+			
+			if(this.projectile_hit_effect_data)
+				GSS.addEffect(this.projectile_hit_effect_data, this.projectile_body.GetPosition().x*GSS.PTM, this.projectile_body.GetPosition().y*GSS.PTM);
 		}
 	}
 }
@@ -123,8 +128,10 @@ GSSWeapon.defaults = {
 	
 	// Projectile image and sounds
 	projectile_image_index: 0,
-	projectile_hit_image_index: 0,
 	projectile_hit_sound_index: 0,
+
+	// Projectile hit effect data
+	projectile_hit_effect_data: false,
 	
 	// Projectile data
 	damage: 1,
@@ -187,6 +194,7 @@ function GSSWeapon(GSSEntity_parent, options){
 	this.projectile_fixture_def.filter.groupIndex = -GSS.faction_data[options.faction_id].category;
 	
 	this.projectile_hit_sound_index = options.projectile_hit_sound_index;
+	this.projectile_hit_effect_data = options.projectile_hit_effect_data;
 	
 }
 
@@ -213,13 +221,14 @@ GSSWeapon.prototype = {
 			if(this.spread_oscilliate && this.projectiles_per_shot > 1)
 			{
 				target_angle =  parent_angle+this.increment_current*this.increment-this.spread/2;
-				GSS.projectiles.push(new GSSProjectile(this.image, this.hit_image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+				GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
 					{
 						angle: target_angle, 
 						velocity_magnitude: this.velocity, 
 						x: new_x+parent_position.x-this.image.width/2/GSS.PTM*Math.cos(target_angle), 
 						y: new_y+parent_position.y-this.image.height/2/GSS.PTM*Math.sin(target_angle),
-						projectile_hit_sound_index: this.projectile_hit_sound_index
+						projectile_hit_sound_index: this.projectile_hit_sound_index,
+						projectile_hit_effect_data: this.projectile_hit_effect_data
 					}
 				));
 				
@@ -255,13 +264,14 @@ GSSWeapon.prototype = {
 				target_angle =  parent_angle+(this.spread_fixed ? this.increment*i-this.spread/2*(this.projectiles_per_shot != 1) : (this.spread*Math.random()-this.spread/2));
 				for(var i = 0; i < this.projectiles_per_shot; i++)
 				{
-					GSS.projectiles.push(new GSSProjectile(this.image, this.hit_image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
+					GSS.projectiles.push(new GSSProjectile(this.image, this.parent, this.projectile_body_def, this.projectile_fixture_def, 
 						{
 							angle: target_angle, 
 							velocity_magnitude: this.velocity, 
 							x: new_x+parent_position.x-this.image.width/2/GSS.PTM*Math.cos(target_angle), 
 							y: new_y+parent_position.y-this.image.height/2/GSS.PTM*Math.sin(target_angle),
-							projectile_hit_sound_index: this.projectile_hit_sound_index
+							projectile_hit_sound_index: this.projectile_hit_sound_index,
+							projectile_hit_effect_data: this.projectile_hit_effect_data
 						}
 					));
 				}

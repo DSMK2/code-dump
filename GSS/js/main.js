@@ -11,9 +11,10 @@ var weapon_data = [
 			image_url: 'images/laser_beam.png', 
 			image_frames: 1
 		},
-		projectile_hit_image: {
+		projectile_hit_effect_data: {
 			image_url: 'images/projectile_hit.png', 
-			image_frames: 1
+			image_frames: 1,
+			lifetime: 500
 		}, 
 		fire_sound_url:'sounds/shoot.wav', 
 		hit_sound_url: 'sounds/explode.wav', 
@@ -61,6 +62,8 @@ GSS = {
 	entities_to_remove: [],
 	projectiles: [],
 	projectiles_to_remove: [],
+	effects: [],
+	effects_to_remove: [],
 	weapon_data: [],
 	entity_data: [],
 	image_data: [],
@@ -272,7 +275,7 @@ GSS = {
 				var 
 				current_weapon_data = weapon_data[w],
 				projectile_image_url = current_weapon_data.projectile_image.image_url,
-				projectile_hit_image_url = current_weapon_data.projectile_hit_image.image_url,
+				projectile_hit_image_url = current_weapon_data.projectile_hit_effect_data.image_url,
 				fire_sound_url = current_weapon_data.fire_sound_url,
 				hit_sound_url = current_weapon_data.hit_sound_url,
 				image_existing_index = -1,
@@ -328,7 +331,7 @@ GSS = {
 		
 				if(projectile_hit_image_index == -1)
 				{
-					GSS.image_data.push({url: projectile_hit_image_url, index: GSS.image_data.length, frames: current_weapon_data.projectile_hit_image.image_frames});
+					GSS.image_data.push({url: projectile_hit_image_url, index: GSS.image_data.length, frames: current_weapon_data.projectile_hit_effect_data.image_frames});
 					projectile_hit_image_index = GSS.image_data.length-1;
 				}
 			
@@ -345,9 +348,12 @@ GSS = {
 				}
 				
 				current_weapon_data.data.projectile_image_index = image_existing_index;
-				current_weapon_data.data.projectile_hit_image_index = projectile_hit_image_index;
+			
 				current_weapon_data.data.fire_sound_index = fire_audio_existing_index;
 				current_weapon_data.data.projectile_hit_sound_index = hit_audio_existing_index;
+				
+				current_weapon_data.projectile_hit_effect_data.image_index = projectile_hit_image_index;
+				current_weapon_data.data.projectile_hit_effect_data = current_weapon_data.projectile_hit_effect_data;
 				
 				GSS.weapon_data.push(current_weapon_data);
 			}
@@ -430,6 +436,11 @@ GSS = {
 			GSS.projectiles[p].update();
 		}
 		
+		for(var ef = 0; ef < GSS.effects.length; ef++)
+		{
+			GSS.effects[ef].update();
+		}
+		
 		if(GSS.flag_follow_player && (GSS.player !== undefined && GSS.player))
 		{	
 			var vel = GSS.player.entity_body.GetLinearVelocity(),
@@ -450,6 +461,13 @@ GSS = {
 			var projectile = GSS.projectiles_to_remove.pop(),
 			index = GSS.getProjectileWithID(projectile.id);
 			GSS.projectiles.splice(index, 1);
+		}
+		
+		while(GSS.effects_to_remove.length !== 0)
+		{
+			var effect = GSS.effects_to_remove.pop(),
+			index = GSS.getEffectWithID(effect.id);
+			GSS.effects.splice(index, 1);
 		}
 	},
 	/**
@@ -496,6 +514,14 @@ GSS = {
 	
 		GSS.entities.push(new_entity);
 	},
+	addEffect: function(data, x, y)
+	{
+		console.log(data);
+		data = clone(data);
+		data.x = x;
+		data.y = y;
+		GSS.effects.push(new GSSEffect(data));
+	},
 	/**
 	* Will assume the projectile array is sorted
 	*/
@@ -525,6 +551,34 @@ GSS = {
 				return GSS.getProjectileWithID(id, halfway+1, end);
 			else
 				return GSS.getProjectileWithID(id, start, halfway);
+		} 
+	},
+	getEffectWithID: function(id, start, end) {
+		var halfway, candidate;
+
+		if(end-start <= 0 || id === undefined)
+		{
+			if(GSS.effects[start].id == id)
+				return start;
+			else
+				return -1;
+		}
+		start = start === undefined ? 0 : start;
+		end = end === undefined ? GSS.effects.length-1 : end;
+		halfway = start+Math.floor((end-start)/2);
+		candidate = GSS.effects[halfway];
+	
+		if(candidate === undefined || candidate.id === undefined)
+			return -1;
+	
+		if(candidate.id == id)
+			return halfway; 
+		else
+		{
+			if(id > candidate.id)
+				return GSS.getEffectWithID(id, halfway+1, end);
+			else
+				return GSS.getEffectWithID(id, start, halfway);
 		} 
 	},
 	cameraFollowPlayer: function(follow_player) {
