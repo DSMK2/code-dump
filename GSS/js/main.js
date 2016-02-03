@@ -28,21 +28,21 @@ var weapon_data = [
 ],
 entity_data = [
 	{
-		entity_image: {
-			image_url: 'images/simplefighter.png', 
-			image_frames: 2, 
-			image_frame_rate: 100, 
+		body_image_data: {
+			url: 'images/simplefighter.png', 
+			frames: 2, 
+			frame_rate: 100, 
 			animate_on_fire: true
 		}, 
-		data: {
-			angle: 90, 
-			angular_velocity_max: 180, 
-			angular_acceleration: 45, 
-			thrust_acceleration: 10, 
-			thrust_deceleration: 25, 
-			velocity_magnitude_max: 10, 
-			weapons:[{x: -21, y: 0, weapon_id: 0}]
-		}
+		angle: 90, 
+		angular_velocity_max: 180, 
+		angular_acceleration: 45, 
+		thrust_acceleration: 10, 
+		thrust_deceleration: 25, 
+		velocity_magnitude_max: 10, 
+		weapons:[{x: -21, y: 0, weapon_id: 0},
+		{x: -21, y: 10, weapon_id: 0},
+		{x: -21, y: -10, weapon_id: 0}]
 	}
 ],
 faction_data = [
@@ -197,14 +197,9 @@ GSS = {
 				texture.anisotropy = 0;
 				texture.minFilter = THREE.NearestFilter;
 				texture.magFilter = THREE.NearestFilter;
-				
-				
 				texture.repeat.x = (texture.image.width/GSS.image_data[image_index].frames)/texture.image.width;
-				// Create material
-				material = new THREE.MeshBasicMaterial({map: texture, wireframe: false, transparent: true});
-				material.side = THREE.DoubleSide;
-				GSS.image_data[image_index].texture = texture;
 				
+				GSS.image_data[image_index].texture = texture;
 				GSS.image_data[image_index].width = texture.image.width;
 				GSS.image_data[image_index].height = texture.image.height;
 				GSS.image_data[image_index].material =  material;
@@ -243,13 +238,13 @@ GSS = {
 			{
 				var 
 				current_entity_data = entity_data[e]
-				img_src = current_entity_data.entity_image.image_url,
+				body_image_url = current_entity_data.body_image_data.url,
 				existing_index = -1;
 				
 				// Find duplicate images
 				for(var a = 0; a < GSS.image_data.length; a++)
 				{
-					if(current_entity_data.entity_image.url == img_src)
+					if(image_url == body_image_url)
 					{
 						existing_index = a;
 						break;
@@ -258,16 +253,12 @@ GSS = {
 		
 				if(existing_index == -1)
 				{
-					GSS.image_data.push({url: img_src, index: GSS.image_data.length, frames: current_entity_data.entity_image.image_frames});
+					GSS.image_data.push({url: body_image_url, index: GSS.image_data.length, frames: current_entity_data.body_image_data.frames});
 					existing_index = GSS.image_data.length-1;
 				}
 				
-				current_entity_data.data.image_index = existing_index;
-				current_entity_data.data.image_frames = current_entity_data.entity_image.image_frames;
-				current_entity_data.data.image_frame_rate = current_entity_data.entity_image.image_frame_rate;
-				current_entity_data.data.animate_on_fire = current_entity_data.entity_image.animate_on_fire;
-				
-				GSS.entity_data.push(current_entity_data.data);
+				current_entity_data.body_image_data.image_index = existing_index;
+				GSS.entity_data.push(current_entity_data);
 			}
 			
 			// Build list of images to load (avoid duplicates)

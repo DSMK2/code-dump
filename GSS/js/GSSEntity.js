@@ -30,7 +30,8 @@ GSSEntity.defaults = {
 	image_index: 0,
 	image_frames: 1,
 	image_frame_rate: 0,
-	animate_on_fire: false
+	animate_on_fire: false,
+	body_image_data: false
 }
 
 /**
@@ -46,12 +47,10 @@ function GSSEntity(index, options) {
 	options = extend(GSSEntity.defaults, options);
 	
 	// BEGIN: GSSEntity Data
-	this.mesh_data = GSS.image_data[options.image_index];
-	this.image_frames = options.image_frames;
-	this.image_frame_rate = options.image_frame_rate;
-	this.image_frame_next = Date.now()+this.image_frame_rate;
-	this.image_frame_current = 0;
-	this.animate_on_fire = options.animate_on_fire;
+	this.body_image_data = options.body_image_data;
+	this.frame_current = 0;
+	console.log(this.body_image_data);
+	this.frame_next = Date.now()+this.body_image_data.frame_rate;
 	
 	this.polygons;
 	this.id = index;
@@ -104,7 +103,13 @@ function GSSEntity(index, options) {
 	// END: Movement stats
 	
 	// BEGIN: THREE.js
-	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.mesh_data.width/this.image_frames, this.mesh_data.height), this.mesh_data.material);
+	this.three_data = GSS.image_data[this.body_image_data.image_index];
+	this.texture = this.three_data.texture.clone();
+	this.texture.needsUpdate = true;
+	this.material = new THREE.MeshBasicMaterial({map: this.texture, wireframe: false, transparent: true});
+	this.material.side = THREE.DoubleSide;
+
+	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.three_data.width/this.body_image_data.frames, this.three_data.height), this.material);
 	GSS.scene.add(this.mesh_plane);
 	// END: THREE.js
 	
@@ -123,11 +128,12 @@ function GSSEntity(index, options) {
 	entity_body_fixture.restitution = 0;
 	entity_body_fixture.filter.groupIndex = -GSS.faction_data[options.faction_id].category; // Same faction does not collide with each other
 	entity_body_fixture.shape = new b2PolygonShape();
-	entity_body_fixture.shape.SetAsBoxXY(this.mesh_data.width/this.image_frames/2/GSS.PTM, this.mesh_data.height/2/GSS.PTM);
+	entity_body_fixture.shape.SetAsBoxXY(this.three_data.width/this.body_image_data.frames/2/GSS.PTM, this.three_data.height/2/GSS.PTM);
 	
 	this.entity_body = GSS.world.CreateBody(entity_body_def);
 	this.entity_body.CreateFixtureFromDef(entity_body_fixture);
 	this.entity_body.GSSData = {type: 'GSSEntity', obj: this};
+	console.log(this.entity_body.GetPosition());
 	// END: liquidfun
 	
 	return this;
@@ -171,6 +177,7 @@ GSSEntity.prototype = {
 		GSS.entities_to_remove.push(this);
 	},
 	update: function(){
+		
 		var
 		// Control flags
 		left = false,
@@ -329,27 +336,28 @@ GSSEntity.prototype = {
 			// END: Angular Movement (Mouse Tracking)
 		}
 		
-		if(Date.now() >= this.image_frame_next && !this.animate_on_fire)
+		if(Date.now() >= this.frame_next && !this.body_image_data.animate_on_fire)
 		{
 			
-			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
-			this.mesh_plane.material.map.offset.x = this.image_frame_current/this.image_frames;
-			this.image_frame_next = Date.now()+this.image_frame_rate;
+			this.frame_current  = this.frame_current == this.body_image_data.frames-1 ? 0 : this.frame_current+1;
+			this.mesh_plane.material.map.offset.x = this.frame_current/this.body_image_data.frames;
+			this.frame_next = Date.now()+this.body_image_data.frame_rate;
 		}
-		else if(Date.now() >= this.image_frame_next && this.animate_on_fire && fire)
+		else if(Date.now() >= this.frame_next && this.body_image_data.animate_on_fire && fire)
 		{
-			this.image_frame_current  = this.image_frame_current == this.image_frames-1 ? 0 : this.image_frame_current+1;
-			this.mesh_plane.material.map.offset.x = this.image_frame_current/this.image_frames;
-			this.image_frame_next = Date.now()+this.image_frame_rate;
+			this.frame_current  = this.frame_current == this.body_image_data.frames-1 ? 0 : this.frame_current+1;
+			this.mesh_plane.material.map.offset.x = this.frame_current/this.body_image_data.frames;
+			this.frame_next = Date.now()+this.body_image_data.frame_rate;
 		}
-		else if(this.animate_on_fire && !fire)
+		else if(this.body_image_data.animate_on_fire && !fire)
 		{
-			this.image_frame_current = 0;
-			this.mesh_plane.material.map.offset.x = 1-(this.mesh_data.width*(1/(0+1)))/this.mesh_data.width;
+			this.frame_current = 0;
+			this.mesh_plane.material.map.offset.x = 1-(this.three_data.width*(1/(0+1)))/this.three_data.width;
 		}
 		
 		this.mesh_plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
 		this.mesh_plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
 		this.mesh_plane.rotation.z = this.entity_body.GetAngle();
+		console.log(this.entity_body.GetPosition(), GSS.PTM);
 	}
 }

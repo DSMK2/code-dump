@@ -19,14 +19,8 @@ function GSSEffect(options){
 	this.mark_for_delete = false;
 	this.id = GSSEffect.id;
 	
-	this.mesh_data = GSS.image_data[options.image_index];
 	this.image_frames = options.image_frames;
 	this.image_frame_current = 0;
-	this.texture = this.mesh_data.texture.clone();
-	this.texture.needsUpdate = true;
-	this.material = new THREE.MeshBasicMaterial({map: this.texture, wireframe: false, transparent: true});
-	this.material.side = THREE.DoubleSide;
-	console.log(this.mesh_data.texture.clone, this.texture.image);
 	
 	this.lifetime = Date.now()+options.lifetime;
 	if(options.animate_with_lifetime)
@@ -35,7 +29,14 @@ function GSSEffect(options){
 		this.image_frame_rate = options.image_frame_rate;
 	console.log(options.image_frame_rate, this.lifetime, this.image_frames);
 	this.time_to_next_frame = Date.now()+this.image_frame_rate;
+	
 	// BEGIN: THREE.js 
+	this.mesh_data = GSS.image_data[options.image_index];
+	this.texture = this.mesh_data.texture.clone();
+	this.texture.needsUpdate = true;
+	this.material = new THREE.MeshBasicMaterial({map: this.texture, wireframe: false, transparent: true});
+	this.material.side = THREE.DoubleSide;
+	
 	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.mesh_data.width/this.image_frames, this.mesh_data.height), this.material);
 	this.mesh_plane.position.x = options.x;
 	this.mesh_plane.position.y = options.y;

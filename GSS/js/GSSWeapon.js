@@ -11,7 +11,9 @@ GSSProjectile.defaults = {
 	velocity_magnitude: 1,
 	lifetime: 1000,
 	projectile_hit_sound_index: 0,
-	projectile_hit_effect_data: false
+	projectile_hit_effect_data: false,
+	image_frames : 1,
+	image_frame_rate: 100
 };
 
 
@@ -20,7 +22,7 @@ GSSProjectile.defaults = {
 */
 function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) {
 	options = extend(GSSProjectile.defaults, options);
-	this.image = image;
+	
 	this.parent = GSSEntity_parent;
 	
 	this.lifetime_end = Date.now()+options.lifetime;
@@ -28,7 +30,6 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 
 	this.projectile_hit_sound_data = GSS.audio_data[options.projectile_hit_sound_index];
 	this.projectile_hit_effect_data = options.projectile_hit_effect_data;
-	console.log(this.projectile_hit_effect_data);
 	this.projectile_body_def = body_def;
 	this.projectile_body_def.angle = options.angle;
 	this.projectile_body_def.position = new b2Vec2(options.x, options.y);
@@ -40,7 +41,6 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	var new_velocity = new b2Vec2(-options.velocity_magnitude*Math.cos(options.angle), -options.velocity_magnitude*Math.sin(options.angle));
 	//b2Vec2.Add(new_velocity, new_velocity, this.parent.entity_body.GetLinearVelocity());
 	this.velocity = new_velocity;
-	console.log(this.velocity);
 	this.projectile_body.SetLinearVelocity(this.velocity);
 	
 	this.id = GSSProjectile.id;
@@ -49,8 +49,20 @@ function GSSProjectile(image, GSSEntity_parent, body_def, fixture_def, options) 
 	this.projectile_body.GSSData = {type: 'GSSProjectile', obj: this};
 	
 	this.destroyed = false;
+	
 	// BEGIN: THREE.js
-	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.image.width, this.image.height), this.image.material);
+	this.mesh_data = image;
+	
+	this.image_frames = options.image_frames;
+	this.image_frame_rate = options.image_frame_rate;
+	this.image_frame_current = 0;
+	
+	this.texture = this.mesh_data.texture.clone();
+	this.texture.needsUpdate = true;
+	this.material = new THREE.MeshBasicMaterial({map: this.texture, wireframe: false, transparent: true});
+	this.material.side = THREE.DoubleSide;
+	
+	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.mesh_data.width, this.mesh_data.height), this.material);
 	GSS.scene.add(this.mesh_plane);
 	// END: THREE.js
 	
@@ -121,7 +133,7 @@ GSSWeapon.defaults = {
 	spread_oscilliate: false,
 	spread_oscilliate_reverse: true,
 	spread_oscilliate_reverse_on_complete: true,
-	spread: 5,
+	spread: 0,
 	spread_fixed: false, // Fixed weapon spread flag, random spread otherwise
 	projectiles_per_shot: 1,
 	flipped: false,
