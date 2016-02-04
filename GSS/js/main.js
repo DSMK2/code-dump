@@ -7,28 +7,30 @@
 */
 var weapon_data = [
 	{
-		projectile_image: {
-			image_url: 'images/laser_beam.png', 
-			image_frames: 1
-		},
-		projectile_hit_effect_data: {
-			image_url: 'images/projectile_hit.png', 
-			image_frames: 5,
-			lifetime: 200,
-			image_frame_rate: 500,
-			animate_with_lifetime: true
-		}, 
-		fire_sound_url:'sounds/shoot.wav', 
-		hit_sound_url: 'sounds/explode.wav', 
-		data: {
-			id: 0, 
+		projectile_data: {	
+			image_data: {
+				url: 'images/laser_beam.png', 
+				frames: 1
+			},
+			hit_effect_data: {
+				image_data: {
+					url: 'images/projectile_hit.png', 
+					frames: 5,
+					frame_rate: 500
+				},
+				lifetime: 200,
+				animate_with_lifetime: true,
+				hit_sound_url: 'sounds/explode.wav' 
+			},
 			dmg: 1
-		}
+		},
+		fire_sound_url:'sounds/shoot.wav',
+		id: 0, 
 	}
 ],
 entity_data = [
 	{
-		body_image_data: {
+		image_data: {
 			url: 'images/simplefighter.png', 
 			frames: 2, 
 			frame_rate: 100, 
@@ -40,9 +42,7 @@ entity_data = [
 		thrust_acceleration: 10, 
 		thrust_deceleration: 25, 
 		velocity_magnitude_max: 10, 
-		weapons:[{x: -21, y: 0, weapon_id: 0},
-		{x: -21, y: 10, weapon_id: 0},
-		{x: -21, y: -10, weapon_id: 0}]
+		weapons:[{x: -21, y: 0, weapon_id: 0}]
 	}
 ],
 faction_data = [
@@ -192,13 +192,13 @@ GSS = {
 				
 				if(image_index == -1)
 					return;
-				
+			
 				// Prevents blurry sprites
 				texture.anisotropy = 0;
 				texture.minFilter = THREE.NearestFilter;
 				texture.magFilter = THREE.NearestFilter;
 				texture.repeat.x = (texture.image.width/GSS.image_data[image_index].frames)/texture.image.width;
-				
+
 				GSS.image_data[image_index].texture = texture;
 				GSS.image_data[image_index].width = texture.image.width;
 				GSS.image_data[image_index].height = texture.image.height;
@@ -238,13 +238,13 @@ GSS = {
 			{
 				var 
 				current_entity_data = entity_data[e]
-				body_image_url = current_entity_data.body_image_data.url,
+				body_image_data = current_entity_data.image_data;
 				existing_index = -1;
 				
 				// Find duplicate images
 				for(var a = 0; a < GSS.image_data.length; a++)
 				{
-					if(image_url == body_image_url)
+					if(image_url == body_image_data.url)
 					{
 						existing_index = a;
 						break;
@@ -253,11 +253,11 @@ GSS = {
 		
 				if(existing_index == -1)
 				{
-					GSS.image_data.push({url: body_image_url, index: GSS.image_data.length, frames: current_entity_data.body_image_data.frames});
+					GSS.image_data.push({url: body_image_data.url, index: GSS.image_data.length, frames: body_image_data.frames});
 					existing_index = GSS.image_data.length-1;
 				}
 				
-				current_entity_data.body_image_data.image_index = existing_index;
+				body_image_data.image_index = existing_index;
 				GSS.entity_data.push(current_entity_data);
 			}
 			
@@ -266,90 +266,75 @@ GSS = {
 			// Find audio to load
 			for(var w = 0; w < weapon_data.length; w++)
 			{
-				var 
-				current_weapon_data = weapon_data[w],
-				projectile_image_url = current_weapon_data.projectile_image.image_url,
-				projectile_hit_image_url = current_weapon_data.projectile_hit_effect_data.image_url,
-				fire_sound_url = current_weapon_data.fire_sound_url,
-				hit_sound_url = current_weapon_data.hit_sound_url,
-				image_existing_index = -1,
+				var current_weapon_data = weapon_data[w],
+				weapon_fire_sound_url = current_weapon_data.fire_sound_url,
+				projectile_data = current_weapon_data.projectile_data,
+				projectile_hit_data = projectile_data.hit_effect_data,
+				projectile_image_url = projectile_data.image_data.url,
+				projectile_hit_image_url = projectile_hit_data.image_data.url,
+				projectile_hit_sound_url = projectile_hit_data.hit_sound_url,
+				i = 0,
+				weapon_fire_sound_index = -1,
+				projectile_image_index = -1,
 				projectile_hit_image_index = -1,
-				fire_audio_existing_index = -1,
-				hit_audio_existing_index = -1;
-		
+				projectile_hit_sound_index = -1; 
+				
 				// Find duplicate images
-				for(var a = 0; a < GSS.image_data.length; a++)
+				for(i = 0; i < GSS.image_data.length; i++)
 				{
-					if(GSS.image_data[a].url == projectile_image_url)
-					{
-						image_existing_index = a;
+					var image_data = GSS.image_data[i];
+					if(projectile_image_url == image_data.url)
+						projectile_image_index = i;
+					if(projectile_hit_image_url == image_data.url)
+						projectile_hit_image_index = i
+						
+					if(projectile_image_url != -1 && projectile_hit_image_index != -1)
 						break;
-					}
 				}
 				
-				// Find duplicate projectile hit images
-				for(var a = 0; a < GSS.image_data.length; a++)
+				// Find duplicate audio
+				for(i = 0; i < GSS.audio_data.length; i++)
 				{
-					if(GSS.image_data[a].url == projectile_hit_image_url)
-					{
-						projectile_hit_image_index = a;
+					var audio_data = GSS.audio_data[i];
+					if(weapon_fire_sound_url == audio_data.url)
+						weapon_fire_sound_index = i;
+					if(projectile_hit_sound_url == audio_data.url)
+						projectile_hit_sound_index = i;
+						
+					if(weapon_fire_sound_url != -1 && projectile_hit_sound_index != -1)
 						break;
-					}
 				}
-		
-				// Find duplicate fire audio
-				for(var af = 0; af < GSS.audio_data.length; af++)
+				
+				if(projectile_image_index == -1)
 				{
-					if(GSS.audio_data[af].url == fire_sound_url)
-					{
-						fire_audio_existing_index = af;
-						break;
-					}		
+					GSS.image_data.push({url: projectile_image_url, index: GSS.image_data.length, frames: projectile_data.image_data.frames});
+					projectile_image_index = GSS.image_data.length-1;
 				}
-		
-				// Find duplicate hit audio
-				for(var ah = 0; ah < GSS.audio_data.length; ah++)
-				{
-					if(GSS.audio_data[ah].url == hit_sound_url)
-					{
-						hit_audio_existing_index = ah;
-						break;
-					}
-				}
-		
-				if(image_existing_index == -1)
-				{
-					GSS.image_data.push({url: projectile_image_url, index: GSS.image_data.length, frames: current_weapon_data.projectile_image.image_frames});
-					image_existing_index = GSS.image_data.length-1;
-				}
-		
+				
 				if(projectile_hit_image_index == -1)
 				{
-					GSS.image_data.push({url: projectile_hit_image_url, index: GSS.image_data.length, frames: current_weapon_data.projectile_hit_effect_data.image_frames});
+					GSS.image_data.push({url: projectile_hit_image_url, index: GSS.image_data.length, frames: projectile_data.hit_effect_data.image_data.frames});
 					projectile_hit_image_index = GSS.image_data.length-1;
 				}
-			
-				if(fire_audio_existing_index == -1)
+				
+				if(weapon_fire_sound_index == -1)
 				{
-					GSS.audio_data.push({url: fire_sound_url, index: GSS.audio_data.length});
-					fire_audio_existing_index = GSS.audio_data.length-1;
-				}
-		
-				if(hit_audio_existing_index == -1)
-				{
-					GSS.audio_data.push({url: hit_sound_url, index: GSS.audio_data.length});
-					hit_audio_existing_index = GSS.audio_data.length-1;
+					GSS.audio_data.push({url: weapon_fire_sound_url, index: GSS.audio_data.length})
+					weapon_fire_sound_index = GSS.audio_data.length-1;
 				}
 				
-				current_weapon_data.data.projectile_image_index = image_existing_index;
-			
-				current_weapon_data.data.fire_sound_index = fire_audio_existing_index;
-				current_weapon_data.data.projectile_hit_sound_index = hit_audio_existing_index;
+				if(projectile_hit_sound_index == -1)
+				{
+					GSS.audio_data.push({url: projectile_hit_sound_url, index: GSS.audio_data.length})
+					projectile_hit_sound_index = GSS.audio_data.length-1;
+				}
 				
-				current_weapon_data.projectile_hit_effect_data.image_index = projectile_hit_image_index;
-				current_weapon_data.data.projectile_hit_effect_data = current_weapon_data.projectile_hit_effect_data;
-				
-				GSS.weapon_data.push(current_weapon_data);
+				current_weapon_data.fire_sound_index = weapon_fire_sound_index;
+			 	projectile_data.image_data.image_index = projectile_image_index;
+			 	projectile_data.hit_effect_data.image_data.image_index = projectile_hit_image_index;
+			 	projectile_data.hit_effect_data.hit_sound_index = projectile_hit_sound_index;
+			 	
+			 	GSS.weapon_data.push(current_weapon_data);
 			}
 				
 			// Load images if empty (this should rarely happen)

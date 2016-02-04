@@ -31,7 +31,8 @@ GSSEntity.defaults = {
 	image_frames: 1,
 	image_frame_rate: 0,
 	animate_on_fire: false,
-	body_image_data: false
+	body_image_data: false,
+	image_data: false
 }
 
 /**
@@ -47,9 +48,8 @@ function GSSEntity(index, options) {
 	options = extend(GSSEntity.defaults, options);
 	
 	// BEGIN: GSSEntity Data
-	this.body_image_data = options.body_image_data;
+	this.body_image_data = options.image_data;
 	this.frame_current = 0;
-	console.log(this.body_image_data);
 	this.frame_next = Date.now()+this.body_image_data.frame_rate;
 	
 	this.polygons;
@@ -63,19 +63,13 @@ function GSSEntity(index, options) {
 	for(var w = 0; w < options.weapons.length; w++)
 	{
 		var weapon_data = clone(GSS.weapon_data[this.weapons[w].weapon_id]);
-			weapon_data.data.x = this.weapons[w].x;
-			weapon_data.data.y = this.weapons[w].y;
-			weapon_data.data.faction_id = this.faction;
+		console.log(	GSS.weapon_data, weapon_data);
+			weapon_data.x = this.weapons[w].x;
+			weapon_data.y = this.weapons[w].y;
+			weapon_data.faction_id = this.faction;
 			this.weapons[w].weapon = new GSSWeapon(this, weapon_data);
 	}
 	
-	/*
-	// Sort weapon slots
-	options.weapon_slots.sort(function(a, b){
-		if(a.group === undefined || b.group === undefined)
-			return 0;
-	});
-	*/
 	this.power_max = options.power_max;
 	this.power_current = this.power_max;
 	this.power_regen = options.power_regen;
@@ -133,7 +127,7 @@ function GSSEntity(index, options) {
 	this.entity_body = GSS.world.CreateBody(entity_body_def);
 	this.entity_body.CreateFixtureFromDef(entity_body_fixture);
 	this.entity_body.GSSData = {type: 'GSSEntity', obj: this};
-	console.log(this.entity_body.GetPosition());
+	console.log('this', -GSS.faction_data[options.faction_id].category);
 	// END: liquidfun
 	
 	return this;
@@ -358,6 +352,5 @@ GSSEntity.prototype = {
 		this.mesh_plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
 		this.mesh_plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
 		this.mesh_plane.rotation.z = this.entity_body.GetAngle();
-		console.log(this.entity_body.GetPosition(), GSS.PTM);
 	}
 }

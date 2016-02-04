@@ -4,6 +4,7 @@
 
 GSSEffect.id = 0;
 GSSEffect.defaults = {
+	image_data: false,
 	image_index: 0,
 	image_frames: 0,
 	image_frame_rate: 0.5,
@@ -19,19 +20,20 @@ function GSSEffect(options){
 	this.mark_for_delete = false;
 	this.id = GSSEffect.id;
 	
-	this.image_frames = options.image_frames;
+	this.image_data = options.image_data
+	this.image_frames = this.image_data.frames;
 	this.image_frame_current = 0;
-	
+	console.log(this.image_frames);
 	this.lifetime = Date.now()+options.lifetime;
 	if(options.animate_with_lifetime)
 		this.image_frame_rate = options.lifetime/this.image_frames;
 	else
-		this.image_frame_rate = options.image_frame_rate;
+		this.image_frame_rate = this.image_data.frame_rate;
 	console.log(options.image_frame_rate, this.lifetime, this.image_frames);
 	this.time_to_next_frame = Date.now()+this.image_frame_rate;
 	
 	// BEGIN: THREE.js 
-	this.mesh_data = GSS.image_data[options.image_index];
+	this.mesh_data = GSS.image_data[this.image_data.image_index];
 	this.texture = this.mesh_data.texture.clone();
 	this.texture.needsUpdate = true;
 	this.material = new THREE.MeshBasicMaterial({map: this.texture, wireframe: false, transparent: true});
