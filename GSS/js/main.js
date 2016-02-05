@@ -19,13 +19,16 @@ var weapon_data = [
 					frame_rate: 500
 				},
 				lifetime: 200,
-				animate_with_lifetime: true,
-				hit_sound_url: 'sounds/explode.wav' 
+				animate_with_lifetime: true
 			},
-			dmg: 1
+			dmg: 1,
+			hit_sound_url: 'sounds/explode.wav'
 		},
+		firerate: 10,
+		spread: 5,
 		fire_sound_url:'sounds/shoot.wav',
-		id: 0, 
+		
+		id: 0
 	}
 ],
 entity_data = [
@@ -39,7 +42,7 @@ entity_data = [
 		angle: 90, 
 		angular_velocity_max: 180, 
 		angular_acceleration: 45, 
-		thrust_acceleration: 10, 
+		thrust_acceleration: 1, 
 		thrust_deceleration: 25, 
 		velocity_magnitude_max: 10, 
 		weapons:[{x: -21, y: 0, weapon_id: 0}]
@@ -84,6 +87,8 @@ GSS = {
 	FPS: 1/60,
 	update_timer: null,
 	
+	/* Web audio API vars */
+	audio_context: null, 
 	/* Liquidfun vars */
 	PTM: null,
 	world: null,
@@ -93,7 +98,7 @@ GSS = {
 	scene: null,
 	renderer: null,
 	camera: null,
-	
+	camera_target_position: {x: 0, y:0},
 	// Functions
 	/**
 	* Init
@@ -106,7 +111,13 @@ GSS = {
 			canvas_height = canvas.clientHeight,
 			near = 0.1,
 			far = 10000;
-
+			
+			/* Init Web Audio API */
+			// See: http://www.html5rocks.com/en/tutorials/webaudio/intro/
+			window.AudioContext = window.AudioContext || window.webkitAudioContext;
+			GSS.audio_context = new AudioContext();
+			
+			
 			/* Init THREE.js */
 			GSS.canvas = canvas;
 			GSS.renderer = new THREE.WebGLRenderer({canvas: GSS.canvas, antilias: false});
@@ -178,6 +189,28 @@ GSS = {
 						}
 					}
 				}
+			});
+			
+			// Events
+			window.addEventListener('all_images_loaded', function(){
+				images_loaded = true;
+				console.log('images_loaded');
+				if(images_loaded && audio_loaded)
+					window.dispatchEvent(GSS.event_assets_loaded);
+			});
+			
+			window.addEventListener('all_audio_loaded', function(){
+				audio_loaded = true;
+				console.log('audio_loaded');
+				if(images_loaded && audio_loaded)
+					window.dispatchEvent(GSS.event_assets_loaded);
+			});
+
+			window.addEventListener('all_assets_loaded', function(){
+				console.log('All assets loaded: Showing player');
+				window.player = GSS.addEntity(0, 0, true);
+				
+				window.target = GSS.addEntity(1, 0, false);
 			});
 			
 			// Load assets
@@ -272,7 +305,7 @@ GSS = {
 				projectile_hit_data = projectile_data.hit_effect_data,
 				projectile_image_url = projectile_data.image_data.url,
 				projectile_hit_image_url = projectile_hit_data.image_data.url,
-				projectile_hit_sound_url = projectile_hit_data.hit_sound_url,
+				projectile_hit_sound_url = projectile_data.hit_sound_url,
 				i = 0,
 				weapon_fire_sound_index = -1,
 				projectile_image_index = -1,
@@ -332,9 +365,10 @@ GSS = {
 				current_weapon_data.fire_sound_index = weapon_fire_sound_index;
 			 	projectile_data.image_data.image_index = projectile_image_index;
 			 	projectile_data.hit_effect_data.image_data.image_index = projectile_hit_image_index;
-			 	projectile_data.hit_effect_data.hit_sound_index = projectile_hit_sound_index;
+			 	projectile_data.hit_sound_index = projectile_hit_sound_index;
 			 	
 			 	GSS.weapon_data.push(current_weapon_data);
+			 	console.log('audio to load', GSS.audio_data);
 			}
 				
 			// Load images if empty (this should rarely happen)
@@ -348,42 +382,48 @@ GSS = {
 				image_data = GSS.image_data[i];
 				texture_loader.load(image_data.url, loadTexture);
 			}
-	
+		
+			//window.dispatchEvent(GSS.event_audio_loaded);
 			// Load audio if empty
 			if(GSS.audio_data.length === 0)
 				window.dispatchEvent(GSS.event_audio_loaded);
-	
+				
+			var audio_urls = [];
 			for(var i = 0; i < GSS.audio_data.length; i++)
 			{
-				var 
-				audio_data = GSS.audio_data[i],
-				audio = new Audio();
+				audio_urls.push(GSS.audio_data[i].url);	
+			}
+			
 		
-				audio.preload = 'auto';
-				audio.src = audio_data.url;
-				audio.oncanplaythrough = loadAudio;
+			function loadAudioURL(url, index){
+				var request = new XMLHttpRequest(),
+				index = index;
+				request.open('GET', url, true);
+				request.responseType = 'arraybuffer';
+				
+				request.onload = function(){
+					num_audio_loaded++;
+					GSS.audio_context.decodeAudioData(request.response, function(buffer) {
+						if(!buffer)
+						{
+							console.error('failed to load audio file');
+							GSS.audio_data[index].buffer = false;
+							return;
+						}
+						GSS.audio_data[index].buffer = buffer;
+					}, function(){console.error('failed');});
+					if(num_audio_loaded == GSS.audio_data.length)
+						window.dispatchEvent(GSS.event_audio_loaded);
+				}
+				
+				request.send();
 			}
 
-			// Events
-			window.addEventListener('all_images_loaded', function(){
-				images_loaded = true;
-				
-				if(images_loaded && audio_loaded)
-					window.dispatchEvent(GSS.event_assets_loaded);
-			});
-			
-			window.addEventListener('all_audio_loaded', function(){
-				audio_loaded = true;
-				
-				if(images_loaded && audio_loaded)
-					window.dispatchEvent(GSS.event_assets_loaded);
-			});
+			for(var i = 0; i < audio_urls.length; i++)
+			{
+				loadAudioURL(audio_urls[i], i);
+			}
 
-			window.addEventListener('all_assets_loaded', function(){
-				console.log('All assets loaded: Showing player');
-				GSS.addEntity(0, 0, true);
-			});
-				
 			flag_init = true;
 	},
 	/**
@@ -397,7 +437,7 @@ GSS = {
 		var offset_mouse_x = GSS.mouse_info.x-GSS.canvas.clientWidth/2,
 		offset_mouse_y = -(GSS.mouse_info.y-GSS.canvas.clientHeight/2),
 		angle = Math.atan2(offset_mouse_y, offset_mouse_x), 
-		max_distance = 500,
+		max_distance = GSS.canvas.width > GSS.canvas.height ? GSS.canvas.width/2*0.9 : GSS.canvas.height/2*0.9,
 		distance = ( Math.sqrt(Math.pow(-offset_mouse_x, 2)+Math.pow(-offset_mouse_y, 2))).clamp(0, max_distance),
 		x = distance*Math.cos(angle),
 		y = distance*Math.sin(angle);
@@ -427,7 +467,10 @@ GSS = {
 			
 			b2Vec2.Normalize(perpend_vel, perpend_vel);
 			b2Vec2.MulScalar(perpend_vel, perpend_vel, -100);
-			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.5*GSS.FPS);
+			//GSS.camera.position.x = x+GSS.player.mesh_plane.position.x;
+			//GSS.camera.position.y = y+GSS.player.mesh_plane.position.y;
+			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.005);
+			//GSS.camera_target_position = {x: x+GSS.player.mesh_plane.position.x, y: y+GSS.player.mesh_plane.position.y};
 		}
 		
 		// Clean up
@@ -492,10 +535,11 @@ GSS = {
 			GSS.player = new_entity;
 	
 		GSS.entities.push(new_entity);
+		
+		return new_entity;
 	},
 	addEffect: function(data, x, y)
 	{
-		console.log(data);
 		data = clone(data);
 		data.x = x;
 		data.y = y;
@@ -565,6 +609,21 @@ GSS = {
 			GSS.follow_player = !GSS.follow_player;
 	
 		GSS.follow_player = follow_player;
+	},
+	playSound: function(index){
+		if(GSS.audio_data.length === 0)
+			return;
+		
+		var source;
+		console.log('asdf', GSS.audio_data, index);
+		if(GSS.audio_data[index] !== undefined && GSS.audio_data[index].buffer !== false)
+		{
+			
+			source = GSS.audio_context.createBufferSource();
+			source.buffer = GSS.audio_data[index].buffer;
+			source.connect(GSS.audio_context.destination);
+			source.start(0);
+		}
 	}
 };
 
@@ -575,7 +634,6 @@ function getNodeDataAtPoint(x, y){
 	var node_x = Math.floor(x/node_size),
 	node_y = Math.floor(y/node_size),
 	bounds = {upperBound: new b2Vec2(node_x, node_y), lowerBound: new b2Vec2(node_x+node_size, node_y+node_size)};
-	console.log(node_x, node_y, bounds);
 	var array_test = [];
 	function test(p){
 		this.point = p;
@@ -583,14 +641,12 @@ function getNodeDataAtPoint(x, y){
 	}
 	test.prototype.ReportFixture = function(asdf)
 	{
-		console.log('hit');
 		array_test.push(asdf.body);
 		this.fixture = asdf;
 		return true;
 	};
 	var test_p = new test(new b2Vec2(0,0));
 	world.QueryAABB(test_p, bounds, array_test);
-	console.log(test_p);
 }
 	
 

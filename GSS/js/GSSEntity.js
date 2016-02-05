@@ -35,6 +35,8 @@ GSSEntity.defaults = {
 	image_data: false
 }
 
+GSSEntity.id = 0;
+
 /**
 Argument setup:
 image object required
@@ -59,17 +61,21 @@ function GSSEntity(index, options) {
 	this.mark_for_delete = false;
 	
 	// Weapons handling
-	this.weapons = options.weapons.slice(0);
-	for(var w = 0; w < options.weapons.length; w++)
+	this.weapons = [];
+	for(var i = 0; i < options.weapons.length; i++)
+	{
+		this.weapons.push(clone(options.weapons[i]));
+	}
+	console.log('before', options.weapons);
+	for(var w = 0; w < this.weapons.length; w++)
 	{
 		var weapon_data = clone(GSS.weapon_data[this.weapons[w].weapon_id]);
-		console.log(	GSS.weapon_data, weapon_data);
 			weapon_data.x = this.weapons[w].x;
 			weapon_data.y = this.weapons[w].y;
 			weapon_data.faction_id = this.faction;
 			this.weapons[w].weapon = new GSSWeapon(this, weapon_data);
 	}
-	
+	console.log('after', options.weapons);
 	this.power_max = options.power_max;
 	this.power_current = this.power_max;
 	this.power_regen = options.power_regen;
@@ -130,6 +136,7 @@ function GSSEntity(index, options) {
 	console.log('this', -GSS.faction_data[options.faction_id].category);
 	// END: liquidfun
 	
+	this.id = GSSEntity.id++;
 	return this;
 }
 
@@ -225,27 +232,27 @@ GSSEntity.prototype = {
 			if(up)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 135*DEGTORAD : move_target-135*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 135*DEGTORAD : angle_target-135*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : move_target+135*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 45*DEGTORAD : angle_target+135*DEGTORAD;
 				else 
-					move_angle = this.movement_relative_to_screen ? 90*DEGTORAD : move_target+180*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 90*DEGTORAD : angle_target+180*DEGTORAD;
 			}
 			else if(down)
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : move_target-45*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 225*DEGTORAD : angle_target-45*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : move_target+45*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 315*DEGTORAD : angle_target+45*DEGTORAD;
 				else
-					move_angle = this.movement_relative_to_screen ? 270*DEGTORAD : move_target;
+					move_angle = this.movement_relative_to_screen ? 270*DEGTORAD : angle_target;
 			} 
 			else
 			{
 				if(left)
-					move_angle = this.movement_relative_to_screen ? 180*DEGTORAD : move_target-90*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 180*DEGTORAD : angle_target-90*DEGTORAD;
 				else if(right)
-					move_angle = this.movement_relative_to_screen ? 0*DEGTORAD : move_target+90*DEGTORAD;
+					move_angle = this.movement_relative_to_screen ? 0*DEGTORAD : angle_target+90*DEGTORAD;
 			}
 			
 			if(fire)
@@ -328,6 +335,24 @@ GSSEntity.prototype = {
 				this.entity_body.SetTransform(this.entity_body.GetPosition(), this.angle_current);
 			}
 			// END: Angular Movement (Mouse Tracking)
+		}
+		else
+		{
+			deceleration_thrust = new b2Vec2(0,0);
+			b2Vec2.Sub(deceleration_thrust, this.entity_body.GetLinearVelocity(), new b2Vec2(x, y));
+			x_force = this.entity_body.GetMass()*deceleration_thrust.x;
+			y_force = this.entity_body.GetMass()*deceleration_thrust.y;
+			x_force = Math.abs(x_force) >= this.thrust_deceleration ? this.thrust_deceleration*(x_force > 0 ? -1 : 1): -x_force;
+			y_force = Math.abs(y_force) >= this.thrust_deceleration ? this.thrust_deceleration*(y_force > 0 ? -1 : 1): -y_force;
+			this.entity_body.ApplyForceToCenter(new b2Vec2(x_force, y_force), true);
+			
+			/*
+			// Find acceleration for a step needed to move angle_delta
+			angular_acceleration_needed = ((angle_delta-this.angular_velocity_current)/GSS.FPS).clamp(-this.angular_acceleration, this.angular_acceleration);
+
+			torque = this.entity_body.GetInertia()*angular_acceleration_needed;
+			this.entity_body.ApplyTorque(torque);
+			*/
 		}
 		
 		if(Date.now() >= this.frame_next && !this.body_image_data.animate_on_fire)

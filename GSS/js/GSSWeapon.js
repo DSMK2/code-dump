@@ -11,6 +11,7 @@ GSSProjectile.defaults = {
 	velocity_magnitude: 1,
 	lifetime: 1000,
 	hit_effect_data: false,
+	hit_sound_index: false,
 	image_frames : 1,
 	image_frame_rate: 100,
 	image_data: false
@@ -29,7 +30,7 @@ function GSSProjectile(GSSEntity_parent, options) {
 	this.mark_for_delete = false;
 
 	this.hit_effect_data = options.hit_effect_data;
-	
+	this.hit_sound_index = options.hit_sound_index;
 	
 	
 	var new_velocity = new b2Vec2(-options.velocity_magnitude*Math.cos(options.angle), -options.velocity_magnitude*Math.sin(options.angle));
@@ -74,7 +75,7 @@ function GSSProjectile(GSSEntity_parent, options) {
 	this.projectile_fixture_def.friction = 1;
 	this.projectile_fixture_def.restitution = 0; // Bounce yes
 	this.projectile_fixture_def.filter.groupIndex = -GSS.faction_data[GSSEntity_parent.faction].category;
-	console.log(-GSS.faction_data[GSSEntity_parent.faction].category);
+
 	this.projectile_body = GSS.world.CreateBody(this.projectile_body_def);
 	this.projectile_body.CreateFixtureFromDef(this.projectile_fixture_def);
 	this.projectile_body.GSS_parent = GSSEntity_parent;
@@ -128,6 +129,7 @@ GSSProjectile.prototype = {
 			audio.src = this.projectile_hit_sound_data.url;
 			audio.play();
 			*/
+			GSS.playSound(this.hit_sound_index);
 			if(this.hit_effect_data)
 				GSS.addEffect(this.hit_effect_data, this.projectile_body.GetPosition().x*GSS.PTM, this.projectile_body.GetPosition().y*GSS.PTM);
 			
@@ -179,7 +181,7 @@ function GSSWeapon(GSSEntity_parent, options){
 	this.hit_image = GSS.image_data[options.projectile_hit_image_index];
 	
 	// Audio
-	this.audio = GSS.audio_data[options.fire_sound_index];
+	this.fire_sound_index = options.fire_sound_index;
 	
 	this.last_fired = 0;
 	this.fire_rate = 1000/options.firerate;
@@ -217,6 +219,7 @@ GSSWeapon.prototype = {
 		var time_current = Date.now();
 		if(this.last_fired == 0 || this.last_fired+this.fire_rate-time_current < 0)
 		{
+			console.log('PARENT FIRING', this.parent.id);
 			var parent_body = this.parent.getBody(),
 			parent_position = parent_body.GetPosition(),
 			parent_angle = parent_body.GetAngle(),
@@ -228,7 +231,7 @@ GSSWeapon.prototype = {
 			audio.src = this.audio.url;
 			audio.play();
 			*/
-			
+			GSS.playSound(this.fire_sound_index);
 			if(this.spread_oscilliate && this.projectiles_per_shot > 1)
 			{
 				target_angle =  parent_angle+this.increment_current*this.increment-this.spread/2;
