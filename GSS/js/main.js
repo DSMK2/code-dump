@@ -89,6 +89,7 @@ GSS = {
 	
 	/* Web audio API vars */
 	audio_context: null, 
+	audio_panner: null,
 	/* Liquidfun vars */
 	PTM: null,
 	world: null,
@@ -116,7 +117,13 @@ GSS = {
 			// See: http://www.html5rocks.com/en/tutorials/webaudio/intro/
 			window.AudioContext = window.AudioContext || window.webkitAudioContext;
 			GSS.audio_context = new AudioContext();
+			GSS.audio_panner = GSS.audio_context.createPanner();
+			GSS.audio_panner.coneOuterGain = 0.5;
+			GSS.audio_panner.coneOuterAngle = 360;
+			GSS.audio_panner.coneInnerAngle  = 0;
 			
+			GSS.audio_panner.connect(GSS.audio_context.destination);			
+			GSS.audio_context.listener.setPosition(canvas_width/2, canvas_height/2, 0);
 			
 			/* Init THREE.js */
 			GSS.canvas = canvas;
@@ -169,9 +176,10 @@ GSS = {
 				
 					// Do stuff if the projectile hits a GSS_ thing
 					if(a_GSSData !== undefined && b_GSSData !== undefined)
-					{
+					{	
+						console.log('asdf', a_type, b_type);
 						// Projectiles cannot interact with each other
-						if((a_type == 'GSSProjectile' || b_type == 'GSSProjectile') && (a_type != 'GSSProjectile' && b_type != 'GSSProjectile') && (a_type == 'GSSEntity' || b_type == 'GSSEntity'))
+						if((a_type == 'GSSProjectile' || b_type == 'GSSProjectile') &&  (a_type == 'GSSEntity' || b_type == 'GSSEntity'))
 						{
 							var projectile = a_type == 'GSSProjectile' ? a_GSSObject : b_GSSObject,
 							entity = a_type == 'GSSEntity' ? a_GSSObject : b_GSSObject;
@@ -437,7 +445,7 @@ GSS = {
 		var offset_mouse_x = GSS.mouse_info.x-GSS.canvas.clientWidth/2,
 		offset_mouse_y = -(GSS.mouse_info.y-GSS.canvas.clientHeight/2),
 		angle = Math.atan2(offset_mouse_y, offset_mouse_x), 
-		max_distance = GSS.canvas.width > GSS.canvas.height ? GSS.canvas.width/2*0.9 : GSS.canvas.height/2*0.9,
+		max_distance = GSS.canvas.width < GSS.canvas.height ? GSS.canvas.width/4 : GSS.canvas.height/4,
 		distance = ( Math.sqrt(Math.pow(-offset_mouse_x, 2)+Math.pow(-offset_mouse_y, 2))).clamp(0, max_distance),
 		x = distance*Math.cos(angle),
 		y = distance*Math.sin(angle);
@@ -463,13 +471,15 @@ GSS = {
 		if(GSS.flag_follow_player && (GSS.player !== undefined && GSS.player))
 		{	
 			var vel = GSS.player.entity_body.GetLinearVelocity(),
+			vel_x = vel.x*GSS.PTM,
+			vel_y = vel.y*GSS.PTM,
 			perpend_vel = new b2Vec2(-vel.y, vel.x);
-			
+
 			b2Vec2.Normalize(perpend_vel, perpend_vel);
 			b2Vec2.MulScalar(perpend_vel, perpend_vel, -100);
 			//GSS.camera.position.x = x+GSS.player.mesh_plane.position.x;
 			//GSS.camera.position.y = y+GSS.player.mesh_plane.position.y;
-			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x, y+GSS.player.mesh_plane.position.y, GSS.camera.position.z), 0.005);
+			GSS.camera.position.lerp(new THREE.Vector3(x+GSS.player.mesh_plane.position.x+vel_x, y+GSS.player.mesh_plane.position.y+vel_y, GSS.camera.position.z), 0.005);
 			//GSS.camera_target_position = {x: x+GSS.player.mesh_plane.position.x, y: y+GSS.player.mesh_plane.position.y};
 		}
 		
@@ -610,19 +620,37 @@ GSS = {
 	
 		GSS.follow_player = follow_player;
 	},
-	playSound: function(index){
+	playSound: function(index, x, y){
 		if(GSS.audio_data.length === 0)
 			return;
 		
 		var source;
-		console.log('asdf', GSS.audio_data, index);
 		if(GSS.audio_data[index] !== undefined && GSS.audio_data[index].buffer !== false)
 		{
 			
+			var panner = GSS.audio_context.createPanner();
+			panner.coneOuterGain = 0.2;
+			panner.coneOuterAngle = 180;
+			panner.coneInnerAngle  = 0;
+			
+			//x-=canvas.width/2*(x/canvas.width/2)
+			//y-=canvas.height/2*(y/canvas.height/2);
+			x+=GSS.camera.position.x;
+			y+=GSS.camera.position.y;
+			//console.log(x, y);
+ 			// Figure out how to translate x, y positions to canvas space
 			source = GSS.audio_context.createBufferSource();
 			source.buffer = GSS.audio_data[index].buffer;
-			source.connect(GSS.audio_context.destination);
+			panner.connect(GSS.audio_context.destination);
+			panner.distanceModel = 'exponential';
+			var angle = -Math.atan2(GSS.mouse_info.x-canvas_width/2, -GSS.mouse_info.y-canvas_height/2)
+			//panner.setOrientation(Math.cos(angle), -Math.sin(angle), 1);
+			GSS.audio_context.listener.setPosition(-x, y, 0);
+			source.connect(panner);
 			source.start(0);
+			//GSS.audio_panner.setPosition(x, y, 0);
+			
+			
 		}
 	}
 };

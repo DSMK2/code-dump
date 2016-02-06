@@ -23,13 +23,11 @@ function GSSEffect(options){
 	this.image_data = options.image_data
 	this.image_frames = this.image_data.frames;
 	this.image_frame_current = 0;
-	console.log(this.image_frames);
 	this.lifetime = Date.now()+options.lifetime;
 	if(options.animate_with_lifetime)
 		this.image_frame_rate = options.lifetime/this.image_frames;
 	else
 		this.image_frame_rate = this.image_data.frame_rate;
-	console.log(options.image_frame_rate, this.lifetime, this.image_frames);
 	this.time_to_next_frame = Date.now()+this.image_frame_rate;
 	
 	// BEGIN: THREE.js 

@@ -129,7 +129,7 @@ GSSProjectile.prototype = {
 			audio.src = this.projectile_hit_sound_data.url;
 			audio.play();
 			*/
-			GSS.playSound(this.hit_sound_index);
+			GSS.playSound(this.hit_sound_index, this.projectile_body.GetPosition().x, this.projectile_body.GetPosition().y);
 			if(this.hit_effect_data)
 				GSS.addEffect(this.hit_effect_data, this.projectile_body.GetPosition().x*GSS.PTM, this.projectile_body.GetPosition().y*GSS.PTM);
 			
@@ -219,7 +219,6 @@ GSSWeapon.prototype = {
 		var time_current = Date.now();
 		if(this.last_fired == 0 || this.last_fired+this.fire_rate-time_current < 0)
 		{
-			console.log('PARENT FIRING', this.parent.id);
 			var parent_body = this.parent.getBody(),
 			parent_position = parent_body.GetPosition(),
 			parent_angle = parent_body.GetAngle(),
@@ -231,7 +230,7 @@ GSSWeapon.prototype = {
 			audio.src = this.audio.url;
 			audio.play();
 			*/
-			GSS.playSound(this.fire_sound_index);
+	
 			if(this.spread_oscilliate && this.projectiles_per_shot > 1)
 			{
 				target_angle =  parent_angle+this.increment_current*this.increment-this.spread/2;
@@ -286,7 +285,8 @@ GSSWeapon.prototype = {
 					GSS.projectiles.push(new GSSProjectile(this.parent, new_data));
 				}
 			}
-
+			
+			GSS.playSound(this.fire_sound_index, new_x+parent_position.x, new_y+parent_position.y);
 			this.last_fired = time_current;
 		}
 	}
