@@ -627,26 +627,29 @@ GSS = {
 		var source;
 		if(GSS.audio_data[index] !== undefined && GSS.audio_data[index].buffer !== false)
 		{
-			
+			/*
 			var panner = GSS.audio_context.createPanner();
-			panner.coneOuterGain = 0.2;
+			panner.coneOuterGain = 1;
 			panner.coneOuterAngle = 180;
 			panner.coneInnerAngle  = 0;
 			
 			//x-=canvas.width/2*(x/canvas.width/2)
 			//y-=canvas.height/2*(y/canvas.height/2);
-			x+=GSS.camera.position.x;
-			y+=GSS.camera.position.y;
+			//x+=GSS.camera.position.x;
+			//y+=GSS.camera.position.y;
 			//console.log(x, y);
  			// Figure out how to translate x, y positions to canvas space
 			source = GSS.audio_context.createBufferSource();
 			source.buffer = GSS.audio_data[index].buffer;
 			panner.connect(GSS.audio_context.destination);
 			panner.distanceModel = 'exponential';
-			var angle = -Math.atan2(GSS.mouse_info.x-canvas_width/2, -GSS.mouse_info.y-canvas_height/2)
-			//panner.setOrientation(Math.cos(angle), -Math.sin(angle), 1);
-			GSS.audio_context.listener.setPosition(-x, y, 0);
+			var angle = Math.atan2(GSS.mouse_info.y-canvas_height/2, GSS.mouse_info.x-canvas_width/2)
+			console.log(x, y);
+			panner.setOrientation(Math.cos(angle), Math.sin(angle), 1);
+			GSS.audio_context.listener.setPosition(x, y );
 			source.connect(panner);
+			*/
+			source.connect(GSS.audio_context.destination);
 			source.start(0);
 			//GSS.audio_panner.setPosition(x, y, 0);
 			
