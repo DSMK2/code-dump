@@ -108,7 +108,7 @@ jQuery(function($){
 			var file_reader = new FileReader();
 			var t = this;
 			file_reader.onload = (function(file_target){
-				if(file_target.type.search(/image/) >= 0)
+				if(file_target.type.search(/image/) >= 0) // Error happens here
 				{	
 
 					console.log('image found');

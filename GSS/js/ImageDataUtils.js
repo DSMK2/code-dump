@@ -38,9 +38,16 @@ function marchingSquaresTraveler(data, x, y, result, start_x, start_y, prev_inde
 		{dir: 0, points: [{x: 0, y: 0.5}, {x: 0.5, y: 1}]}, //'1110', // 14 Uses reversed coordinates of 1 to signify inside
 		{dir: -1, points: []},  // 15 All sides (same as 0)
 		
-		// Special cases (should never be found normally)
-		{dir: 2, points: [{x: 0.5, y: 0}, {x: 0, y: 0.5}]}, // 16
-		{dir: 2, points: [{x: 1, y: 0.4}, {x: 0.4, y: 1}]} // 17
+		// Special cases for case 5 and 10 (should never be found normally)
+		{dir: 3, points: [{x: 0.5, y: 1}, {x: 1, y: 0.5}]},			// 5-16 come in from up 0
+		{dir: 0, points: [{x: 0.5, y: 1}, {x: 1, y: 0.5}]}, 		// 5-17 come in from right 1
+		{dir: 1, points: [{x: 0.5, y: 0}, {x: 0, y: 0.5}]}, 		// 5-18 come in from down 2
+		{dir: 2, points: [{x: 1, y: 0.5}, {x: 0.5, y: 1}]}, 		// 5-19 come in from left 3
+		
+		{dir: 3, points: [{x: 0.5, y: 1}, {x: 0.5, y: 0.5}]},		// 10-20 come in from up 0
+		{dir: 0, points: [{x: 0.5, y: 0}, {x: 1, y: 0.5}]},			// 10-21 come in from right 1
+		{dir: 1, points: [{x: 0, y:0.5}, {x: 0.5, y: 1}]},			// 10-22 come in from down 2
+		{dir: 2, points: [{x: 1, y: 0.5}, {x: 0.5, y: 0}]}			// 10-23 come in from left 3
 	],
 	selected_square,
 	index = 0,
@@ -135,90 +142,59 @@ function marchingSquaresTraveler(data, x, y, result, start_x, start_y, prev_inde
 	// COnnecting points get index subbed
 	if(index == 5 || index == 10)
 	{
-		var prev_dir = square[prev_index].dir,
-		// Get cells around current cell
-		top_left =  	getCellDataFromCell(x, y, 0),
-		top = 			getCellDataFromCell(x, y, 1),
-		top_right = 	getCellDataFromCell(x, y, 2),
-		right = 		getCellDataFromCell(x, y, 3),
-		bottom_right = 	getCellDataFromCell(x, y, 4),
-		bottom = 		getCellDataFromCell(x, y, 5),
-		bottom_left = 	getCellDataFromCell(x, y, 6),
-		left = 			getCellDataFromCell(x, y, 7),
-		tlca = 0,
-		trca = 0,
-		brca = 0,
-		blca = 0;
-		
-		// Based on direction check ahead and outwards
-		switch(prev_dir)
-		{
-			case 0:
-				console.log('up');
-				tlca = averageArray(top_left);
-				trca = averageArray(top);
-				brca = averageArray([data[y][x], data[y][x+1], data[y+1][x+1], data[y+1][x]]);
-				blca = averageArray(left);
-				break;
-			case 1:
-				console.log('right');
-				tlca = averageArray(top);
-				trca = averageArray(top_right);
-				brca = averageArray(right);
-				blca = averageArray([data[y][x], data[y][x+1], data[y+1][x+1], data[y+1][x]]);
-				break;
-			case 2:
-				console.log('down');
-				tlca = averageArray(left);
-				trca = averageArray([data[y][x], data[y][x+1], data[y+1][x+1], data[y+1][x]]);
-				brca = averageArray(bottom);
-				blca = averageArray(bottom_left);
-				break;
-			case 3:
-				console.log('left');
-				tlca = averageArray(left);
-				trca = averageArray([data[y][x], data[y][x+1], data[y+1][x+1], data[y+1][x]]);
-				brca = averageArray(bottom);
-				blca = averageArray(bottom_left);
-				break;
-		}
-		
-		// If this counts as a outline thingo
-		if(tlca+trca+brca+blca >= 1)
+		var prev_dir = square[prev_index].dir;
+		if(index == 5)
 		{
 			switch(prev_dir)
 			{
 				case 0:
-					if(index == 5)
-						selected_square = square[4];
-					else if(index == 10)
-					{
-						selected_square = square[2];
-					}	
+					index = 16;
+					selected_square = square[index];
+					dir = selected_square.dir;
 					break;
 				case 1:
-					if(index == 5)
-						selected_square = square[8];
-					else if(index == 10)
-						selected_square = square[4];
+					index = 17;
+					selected_square = square[index];
+					dir = selected_square.dir; 
 					break;
 				case 2:
-					if(index == 5)
-						selected_square = square[2];
-					else if(index == 10)
-						selected_square = square[1];	
+					index = 18;
+					selected_square = square[index];
+					dir = selected_square.dir;
 					break;
 				case 3:
-					if(index == 5)
-						selected_square = square[4];
-					else if(index == 10)
-						selected_square = square[16];
+					index = 19;
+					selected_square = square[index];
+					dir = selected_square.dir;
 					break;
 			}
 		}
-		else 
+		
+		if(index == 10)
 		{
-			/* Return results? */
+			switch(prev_dir)
+			{
+				case 0:
+					index = 20;
+					selected_square = square[index];
+					dir = selected_square.dir;
+					break;
+				case 1:
+					index = 21;
+					selected_square = square[index];
+					dir = selected_square.dir; 
+					break;
+				case 2:
+					index = 22;
+					selected_square = square[index];
+					dir = selected_square.dir;
+					break;
+				case 3:
+					index = 23;
+					selected_square = square[index];
+					dir = selected_square.dir;
+					break;
+			}
 		}
 	}
 	

@@ -134,6 +134,9 @@ GSSProjectile.prototype = {
 				GSS.addEffect(this.hit_effect_data, this.projectile_body.GetPosition().x*GSS.PTM, this.projectile_body.GetPosition().y*GSS.PTM);
 			
 		}
+	},
+	applyDamage: function(target){
+		target.hp = this.damage;
 	}
 }
 
