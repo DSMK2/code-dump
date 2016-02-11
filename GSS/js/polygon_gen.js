@@ -168,11 +168,14 @@ jQuery(function($){
 			var horizontal_offset = result.left+result.right,
 			vertical_offset = result.top+result.bottom
 			context.drawImage(image, result.left, result.top, image.width-result.right, image.height-result.bottom, 1, 1, image.width-result.right, image.height-result.bottom);
+			context.canvas.width*=5
+			context.canvas.height*=5
 			for(var i = 0; i < polygon_result.length; i+=2)
 			{
 				context.beginPath();
-				context.moveTo(polygon_result[i].x+1, polygon_result[i].y+1);
-				context.lineTo(polygon_result[i+1].x+1, polygon_result[i+1].y+1);
+				console.log(polygon_result[i]);
+				context.moveTo(polygon_result[i].x*5, polygon_result[i].y*5);
+				context.lineTo(polygon_result[i+1].x*5, polygon_result[i+1].y*5);
 				context.strokeStyle='#ff00ff';
 				context.strokeWidth = 2;
 				context.stroke();
