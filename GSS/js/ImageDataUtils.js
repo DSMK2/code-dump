@@ -278,41 +278,65 @@ var ImageDataUtils = {
 					break;
 		}
 		
-		/*
-		if(result.length !== 0)
+		// Clean up dupes
+		for(var r = 0; r < result.length; r++)
 		{
-			
+			for(var rd = r; rd < result.length; rd++)
+			{
+				if(rd != r)
+				{
+					if(result[r].x == result[rd].x && result[r].y == result[rd].y)
+					{
+						result.splice(rd, 1);
+						rd--;
+					}
+				}
+			} 
+		}
+		
+		
+		// Clean up stuff on the same "line"
+		if(result.length != 0)
+		{
+			// Starting from a reference vector 
+			// Check angle with preceding vectors
+			// Remove points between reference vector and preceding vector when angle to ref vector changes.
 			ref_vector = result[0];
 			prev_vector = result[1];
 			ref_angle = Math.atan2(prev_vector.y-ref_vector.y, prev_vector.x-ref_vector.x);
 			var count = 0;
 			console.log('start', ref_angle*180/Math.PI, ref_vector, prev_vector);
+			var index = [];
 			for(var p = 2; p < result.length; p++)
 			{
 				curr_vector = result[p];
-				curr_angle = Math.atan2(curr_vector.y-ref_vector.y, curr_vector.x-ref_vector.x);
-		
-				console.log(ref_angle*180/Math.PI, curr_angle*180/Math.PI);
+				curr_angle = Math.atan2(curr_vector.y-ref_vector.y, curr_vector.x-ref_vector.x)
+				
 				if(ref_angle === undefined)
 				{
+					console.log(count, 'set', curr_angle*180/Math.PI, ref_angle*180/Math.PI, curr_vector);
 					ref_angle = curr_angle;
+					prev_vector = curr_vector;
 				}
-				else if(ref_angle !== undefined && curr_angle == ref_angle)
+				
+				else if(ref_angle == curr_angle)
 				{
-					console.info('removed');
+					console.log(count, 'removed', curr_angle*180/Math.PI, ref_angle*180/Math.PI, curr_vector, prev_vector);
+					result.splice(--p, 1);
 					
-					result.splice(p-1, 1);
+					prev_vector = curr_vector;
 				}
-				else
+				else if(ref_angle != curr_angle)
 				{
+					console.log(count, 'changed', curr_angle*180/Math.PI, ref_angle*180/Math.PI);
 					ref_vector = curr_vector;
 					ref_angle = undefined;
 				}
-				prev_vector = curr_vector;
-
+				
+				count++;
 			}
 		}
-		*/
+
 		
 		/*
 		// Simplify polygon by traveling around it, "joining" points by angle

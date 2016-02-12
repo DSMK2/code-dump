@@ -165,22 +165,38 @@ jQuery(function($){
 		}
 		else if(processed_image && result !== undefined && processed_image_2 && polygon_result !== undefined)
 		{
+			var scale = 20;
 			var horizontal_offset = result.left+result.right,
 			vertical_offset = result.top+result.bottom
 			context.drawImage(image, result.left, result.top, image.width-result.right, image.height-result.bottom, 1, 1, image.width-result.right, image.height-result.bottom);
-			context.canvas.width*=5
-			context.canvas.height*=5
-			for(var i = 0; i < polygon_result.length; i+=2)
+			context.canvas.width*=scale
+			context.canvas.height*=scale
+			context.beginPath();
+			context.moveTo(polygon_result[0].x*scale, polygon_result[0].y*scale);
+			for(var i = 1; i < polygon_result.length; i++)
 			{
-				context.beginPath();
+				
 				console.log(polygon_result[i]);
-				context.moveTo(polygon_result[i].x*5, polygon_result[i].y*5);
-				context.lineTo(polygon_result[i+1].x*5, polygon_result[i+1].y*5);
-				context.strokeStyle='#ff00ff';
-				context.strokeWidth = 2;
-				context.stroke();
-				context.closePath();
+				
+				context.lineTo(polygon_result[i].x*scale, polygon_result[i].y*scale);
+				//context.rect(polygon_result[i].x*scale-2, polygon_result[i].y*scale-2, 2, 2)
+				
+				
 			}
+			context.lineTo(polygon_result[0].x*scale, polygon_result[0].y*scale);
+			context.strokeStyle='#fff';
+			context.strokeWidth = 2;
+			context.stroke();
+			context.closePath();
+			
+			context.beginPath();
+			for(var i = 0; i < polygon_result.length; i++)
+			{
+				context.rect(polygon_result[i].x*scale-2.5, polygon_result[i].y*scale-2.5, 5, 5)
+			}
+			context.fillStyle = '#000';
+			context.fill();
+			context.closePath();
 		}
 		else
 			context.drawImage(image, context.canvas.width/2-image_width/2, context.canvas.height/2-image_height/2);
