@@ -228,7 +228,7 @@ var ImageDataUtils = {
 		
 		return result;
 	},
-	getOutline:function(image_data, r, g, b, a) {
+	getOutline:function(image_data, r, g, b, a, triangulate) {
 		// Coordinates for each vector square possibility (clockwise from top corner), actual offsets happen later
 		var rgba_ignore = {r: r, g: g, b: b, a: a},
 		pixel_grid = ImageDataUtils.getPixelGrid(image_data, rgba_ignore),
@@ -260,6 +260,7 @@ var ImageDataUtils = {
 		Move cell based on clockwise direction, not scanning
 		*/
 		// Find start position
+		/*
 		var found_poly = false;
 		for(var y = 0; y < pixel_grid.length-1; y++)
 		{
@@ -277,8 +278,26 @@ var ImageDataUtils = {
 			if(found_poly)
 					break;
 		}
+		*/
+		var found_poly = false;
+		for(var x = 0; x < pixel_grid[0].length; x++)
+		{
+			for(var y = 0; y < pixel_grid.length-1; y++)
+			{
+				if(pixel_grid[y+1][x])
+				{
+					console.log('start');
+					result = marchingSquaresTraveler(pixel_grid, x-1, y);
+					found_poly = true;
+				}
+				if(found_poly)
+					break;
+			}
+			if(found_poly)
+					break;
+		}
 		
-		// Clean up dupes
+		// Clean up duplicate vectors
 		for(var r = 0; r < result.length; r++)
 		{
 			for(var rd = r; rd < result.length; rd++)
@@ -305,78 +324,43 @@ var ImageDataUtils = {
 			prev_vector = result[1];
 			ref_angle = Math.atan2(prev_vector.y-ref_vector.y, prev_vector.x-ref_vector.x);
 			var count = 0;
-			console.log('start', ref_angle*180/Math.PI, ref_vector, prev_vector);
 			var index = [];
 			for(var p = 2; p < result.length; p++)
 			{
+				//3 "changed" 8.13010235415598 0 Object {x: 19, y: 0.5} Object {x: 19.5, y: 1}
+				
 				curr_vector = result[p];
+				console.log(count, curr_vector);
 				curr_angle = Math.atan2(curr_vector.y-ref_vector.y, curr_vector.x-ref_vector.x)
 				
-				if(ref_angle === undefined)
+				if(ref_angle == curr_angle)
 				{
-					console.log(count, 'set', curr_angle*180/Math.PI, ref_angle*180/Math.PI, curr_vector);
-					ref_angle = curr_angle;
-					prev_vector = curr_vector;
-				}
-				
-				else if(ref_angle == curr_angle)
-				{
-					console.log(count, 'removed', curr_angle*180/Math.PI, ref_angle*180/Math.PI, curr_vector, prev_vector);
 					result.splice(--p, 1);
 					
 					prev_vector = curr_vector;
 				}
 				else if(ref_angle != curr_angle)
 				{
-					console.log(count, 'changed', curr_angle*180/Math.PI, ref_angle*180/Math.PI);
-					ref_vector = curr_vector;
-					ref_angle = undefined;
+					ref_vector = prev_vector;
+					ref_angle = Math.atan2(curr_vector.y-ref_vector.y, curr_vector.x-ref_vector.x);
+					prev_vector = curr_vector;
 				}
 				
 				count++;
 			}
+			curr_angle = Math.atan2(result[0].y-ref_vector.y, result[0].x-ref_vector.x);
+			if(ref_angle == curr_angle)
+				result.splice(result.length-1, 1);
 		}
 
 		
-		/*
-		// Simplify polygon by traveling around it, "joining" points by angle
-		var counter = 0;
-		for(var p = 0; p < result.length; p++)
+		if(triangulate !== undefined && triangulate)
 		{
-			
-			curr_vector = result[p];
-			if(p === 0)
+			for(var i = 0; i < result.length; i++)
 			{
-				prev_vector = curr_vector;
+				
 			}
-			else
-			{
-				if(prev_angle === undefined)
-				{
-					prev_angle = Math.atan2(curr_vector.y-prev_vector.y, curr_vector.x-prev_vector.x);
-					prev_vector = curr_vector;
-
-				}else
-				{
-					curr_angle = Math.atan2(curr_vector.y-prev_vector.y, curr_vector.x-prev_vector.x);
-					
-					if(curr_angle == prev_angle)
-					{
-						p--;
-						result.splice(p-1, 1);	
-					}
-					else
-						prev_vector = curr_vector;
-					console.log('step:', counter, curr_angle*180/Math.PI, prev_angle*180/Math.PI, prev_vector, curr_vector);
-					
-					prev_angle = curr_angle;
-					
-				}
-			}
-			
-			counter++;
 		}
-		*/
 		
 		
 		// Simply polygon by traveling circuits;

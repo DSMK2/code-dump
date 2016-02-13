@@ -48,8 +48,9 @@
 					var source = audio_context.createBufferSource();
 					source.buffer = audio_buffer;
 					source.connect(audio_panner);
-					audio_context.listener.setPosition($(window).width()/2, $(window).height()/2, 0);
-					
+					audio_context.listener.setPosition($(window).width()/2, $(window).height()/2, 300);
+
+					//audio_context.listener.dopplerFactor = 2;
 					audio_panner.setPosition(mouse_info.x, mouse_info.y, 0);
 					source.start(0);
 				}, 500);

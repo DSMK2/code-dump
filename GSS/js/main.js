@@ -90,6 +90,7 @@ GSS = {
 	/* Web audio API vars */
 	audio_context: null, 
 	audio_panner: null,
+	audio_gain: null,
 	/* Liquidfun vars */
 	PTM: null,
 	world: null,
@@ -117,6 +118,11 @@ GSS = {
 			// See: http://www.html5rocks.com/en/tutorials/webaudio/intro/
 			window.AudioContext = window.AudioContext || window.webkitAudioContext;
 			GSS.audio_context = new AudioContext();
+			GSS.audio_context.listener.setPosition($(window).width()/2, $(window).height()/2, 300);
+			GSS.audio_gain = GSS.audio_context.createGain();
+			GSS.audio_gain.gain.value = 0.1;
+			GSS.audio_gain.connect(GSS.audio_context.destination);
+			
 			GSS.audio_panner = GSS.audio_context.createPanner();
 			GSS.audio_panner.coneOuterGain = 0.5;
 			GSS.audio_panner.coneOuterAngle = 360;
@@ -627,6 +633,27 @@ GSS = {
 		var source;
 		if(GSS.audio_data[index] !== undefined && GSS.audio_data[index].buffer !== false)
 		{
+			var panner = GSS.audio_context.createPanner();
+			
+			//panner.connect(GSS.audio_context.destination);
+			panner.panningModel = 'HRTF';
+			panner.distanceModel = 'inverse';
+			panner.coneOuterGain = 1;
+			panner.coneOuterAngle = 360;
+			panner.coneInnerAngle = 0;
+			panner.refDistance = 50;
+			panner.maxDistance = 10000;
+			panner.rolloffFactor = 0.5;
+			panner.setOrientation(1, 0, 0);
+			panner.connect(GSS.audio_gain);
+			
+			source = GSS.audio_context.createBufferSource();
+			source.buffer = GSS.audio_data[index].buffer;
+			source.connect(panner);
+			console.log(GSS.canvas.width/2, GSS.canvas.height/2, x*GSS.PTM, GSS.camera.position.x, x-GSS.camera.position.x+GSS.canvas.width/2);
+			panner.setPosition(x*GSS.PTM-GSS.camera.position.x+GSS.canvas.width/2, y*GSS.PTM-GSS.camera.position.y+GSS.canvas.height/2, 0);
+			
+			source.start(0);
 			/*
 			var panner = GSS.audio_context.createPanner();
 			panner.coneOuterGain = 1;
@@ -649,8 +676,7 @@ GSS = {
 			GSS.audio_context.listener.setPosition(x, y );
 			source.connect(panner);
 			*/
-			source.connect(GSS.audio_context.destination);
-			source.start(0);
+			
 			//GSS.audio_panner.setPosition(x, y, 0);
 			
 			

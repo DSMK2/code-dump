@@ -173,6 +173,7 @@ jQuery(function($){
 			context.canvas.height*=scale
 			context.beginPath();
 			context.moveTo(polygon_result[0].x*scale, polygon_result[0].y*scale);
+			console.log(polygon_result[0]);
 			for(var i = 1; i < polygon_result.length; i++)
 			{
 				
@@ -193,6 +194,8 @@ jQuery(function($){
 			for(var i = 0; i < polygon_result.length; i++)
 			{
 				context.rect(polygon_result[i].x*scale-2.5, polygon_result[i].y*scale-2.5, 5, 5)
+				context.font = "10px Arial";
+				context.fillText((i === 0 ? 'start ' : '')+ polygon_result[i].x+' '+polygon_result[i].y, polygon_result[i].x*scale+3, polygon_result[i].y*scale)
 			}
 			context.fillStyle = '#000';
 			context.fill();
