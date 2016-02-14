@@ -70,7 +70,7 @@ jQuery(function($){
 							
 							
 							var image_data = context.getImageData(0, 0, image_width, image_height);
-							worker.postMessage({request: 'get_outline', args:[image_data, 0, 0, 0, 0]});
+							worker.postMessage({request: 'get_outline', args:[image_data, 0, 0, 0, 0, false, true]});
 							
 							
 							context.drawImage(image, -result.left+(image.width-result.right), -result.top+(image.height-result.bottom), result.right, result.bottom, -result.left, -result.top, result.right, result.bottom);

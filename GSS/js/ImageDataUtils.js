@@ -228,7 +228,7 @@ var ImageDataUtils = {
 		
 		return result;
 	},
-	getOutline:function(image_data, r, g, b, a, triangulate) {
+	getOutline:function(image_data, r, g, b, a, triangulate, simplify) {
 		// Coordinates for each vector square possibility (clockwise from top corner), actual offsets happen later
 		var rgba_ignore = {r: r, g: g, b: b, a: a},
 		pixel_grid = ImageDataUtils.getPixelGrid(image_data, rgba_ignore),
@@ -315,7 +315,7 @@ var ImageDataUtils = {
 		
 		
 		// Clean up stuff on the same "line"
-		if(result.length != 0)
+		if(result.length !== 0)
 		{
 			// Starting from a reference vector 
 			// Check angle with preceding vectors
@@ -323,16 +323,13 @@ var ImageDataUtils = {
 			ref_vector = result[0];
 			prev_vector = result[1];
 			ref_angle = Math.atan2(prev_vector.y-ref_vector.y, prev_vector.x-ref_vector.x);
-			var count = 0;
 			var index = [];
 			for(var p = 2; p < result.length; p++)
 			{
 				//3 "changed" 8.13010235415598 0 Object {x: 19, y: 0.5} Object {x: 19.5, y: 1}
 				
 				curr_vector = result[p];
-				console.log(count, curr_vector);
 				curr_angle = Math.atan2(curr_vector.y-ref_vector.y, curr_vector.x-ref_vector.x)
-				
 				if(ref_angle == curr_angle)
 				{
 					result.splice(--p, 1);
@@ -345,15 +342,94 @@ var ImageDataUtils = {
 					ref_angle = Math.atan2(curr_vector.y-ref_vector.y, curr_vector.x-ref_vector.x);
 					prev_vector = curr_vector;
 				}
-				
-				count++;
 			}
 			curr_angle = Math.atan2(result[0].y-ref_vector.y, result[0].x-ref_vector.x);
 			if(ref_angle == curr_angle)
 				result.splice(result.length-1, 1);
 		}
-
 		
+		/*
+		if(result.length !== 0 && simplify !== undefined && simplify)
+		{
+			prev_vector = result[0];
+			curr_vector = result[1];
+			var distance = Math.sqrt(Math.pow(curr_vector.x-prev_vector.x,2)+Math.pow(curr_vector.y-prev_vector.y,2));
+			var between_vector = {x: (curr_vector.x+prev_vector.x)/2, y: (curr_vector.y+prev_vector.y)/2};
+			var distance_threshold=1;
+			if(distance < distance_threshold)
+			{
+				
+				result.splice(0, 2, between_vector);
+				prev_vector = between_vector;
+				
+			}
+			else
+				prev_vector = curr_vector;
+			console.log(between_vector, curr_vector, prev_vector);
+			
+			for(var s = 2; s < result.length; s++)
+			{
+				curr_vector = result[s];
+				
+				distance = Math.sqrt(Math.pow(curr_vector.x-prev_vector.x,2)+Math.pow(curr_vector.y-prev_vector.y,2));
+				between_vector = {x: (curr_vector.x+prev_vector.x)/2, y: (curr_vector.y+prev_vector.y)/2};
+				console.log(distance, curr_vector, prev_vector, between_vector);
+				if(distance < distance_threshold)
+				{
+					s--;
+					result.splice(s, 2, between_vector);
+					prev_vector = between_vector;
+				}
+				else
+					prev_vector = curr_vector;
+			}
+			prev_vector = result[result.length-1];
+			curr_vector = result[0];
+			distance = Math.sqrt(Math.pow(curr_vector.x-prev_vector.x,2)+Math.pow(curr_vector.y-prev_vector.y,2));
+			between_vector = {x: (curr_vector.x+prev_vector.x)/2, y: (curr_vector.y+prev_vector.y)/2};
+			if(distance < distance_threshold)
+			{
+				result.splice(result.length-1, 1, between_vector);
+				result[0] = between_vector;
+			}
+			console.log(between_vector, curr_vector, prev_vector);
+			
+		}
+		*/
+		if(result.length !== 0 && simplify !== undefined && simplify)
+		{
+			prev_vector = result[0];
+			curr_vector = result[1];
+			var distance = Math.sqrt(Math.pow(curr_vector.x-prev_vector.x,2)+Math.pow(curr_vector.y-prev_vector.y,2));
+			var between_vector = {x: (curr_vector.x+prev_vector.x)/2, y: (curr_vector.y+prev_vector.y)/2};
+			var distance_threshold=1.5;
+			if(distance < distance_threshold)
+			{
+				
+				result.splice(0, 2, between_vector);
+				prev_vector = between_vector;
+				
+			}
+			else
+				prev_vector = curr_vector;
+				
+			for(var s = 2; s < result.length; s++)
+			{
+				curr_vector = result[s];
+				distance = Math.sqrt(Math.pow(curr_vector.x-prev_vector.x,2)+Math.pow(curr_vector.y-prev_vector.y,2));
+				between_vector = {x: (curr_vector.x+prev_vector.x)/2, y: (curr_vector.y+prev_vector.y)/2};
+				if(distance < distance_threshold)
+				{
+					result.splice(--s, 2, between_vector);
+					prev_vector = between_vector;
+					
+				}
+				else
+					prev_vector = curr_vector;
+				
+			}
+			
+		}
 		if(triangulate !== undefined && triangulate)
 		{
 			for(var i = 0; i < result.length; i++)

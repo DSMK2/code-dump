@@ -137,7 +137,7 @@ GSS = {
 			GSS.camera = new THREE.OrthographicCamera( canvas_width / - 2, canvas_width / 2, canvas_height / 2, canvas_height / - 2, near, far );
 			GSS.scene = new THREE.Scene();
 
-			GSS.renderer.setClearColor(0xFFFFFF);
+			GSS.renderer.setClearColor(0x000000);
 			GSS.renderer.setSize(canvas_width, canvas_height);
 			
 			GSS.scene.add(GSS.camera);
@@ -191,6 +191,7 @@ GSS = {
 							entity = a_type == 'GSSEntity' ? a_GSSObject : b_GSSObject;
 					
 							projectile.destroy(true);
+							entity.damage(0);
 						}
 					}
 					// Do stuff if it hits something
@@ -650,7 +651,7 @@ GSS = {
 			source = GSS.audio_context.createBufferSource();
 			source.buffer = GSS.audio_data[index].buffer;
 			source.connect(panner);
-			console.log(GSS.canvas.width/2, GSS.canvas.height/2, x*GSS.PTM, GSS.camera.position.x, x-GSS.camera.position.x+GSS.canvas.width/2);
+//			console.log(GSS.canvas.width/2, GSS.canvas.height/2, x*GSS.PTM, GSS.camera.position.x, x-GSS.camera.position.x+GSS.canvas.width/2);
 			panner.setPosition(x*GSS.PTM-GSS.camera.position.x+GSS.canvas.width/2, y*GSS.PTM-GSS.camera.position.y+GSS.canvas.height/2, 0);
 			
 			source.start(0);

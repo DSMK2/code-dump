@@ -8,7 +8,13 @@ GSSProjectile.defaults = {
 	angle: 0, 
 	x: 0, 
 	y: 0, 
-	velocity_magnitude: 1,
+	thrust_acceleration: 0.5,
+	thrust_deceleration: -1,
+	velocity_max: 50,
+	velocity_initial: 1,
+	velocity_inherit: false,
+	homing: false, 
+	homing_radius: 0, 
 	lifetime: 1000,
 	hit_effect_data: false,
 	hit_sound_index: false,
@@ -32,10 +38,21 @@ function GSSProjectile(GSSEntity_parent, options) {
 	this.hit_effect_data = options.hit_effect_data;
 	this.hit_sound_index = options.hit_sound_index;
 	
+	this.homing = options.homing;
+	this.homing_radius = options.homing_radius;
 	
-	var new_velocity = new b2Vec2(-options.velocity_magnitude*Math.cos(options.angle), -options.velocity_magnitude*Math.sin(options.angle));
-	//b2Vec2.Add(new_velocity, new_velocity, this.parent.entity_body.GetLinearVelocity());
-	this.velocity = new_velocity;
+	this.thrust_acceleration = options.thrust_acceleration;
+	this.thrust_deceleration = options.thrust_deceleration;
+	this.velocity_max = options.velocity_max;
+	this.velocity_inherit = options.velocity_inherit;
+	
+	var inherit_velocity = this.velocity_inherit ? this.parent.entity_body.GetLinearVelocity() : new b2Vec2(0, 0);
+	
+	this.velocity = new b2Vec2(-options.velocity_initial*Math.cos(options.angle), -options.velocity_initial*Math.sin(options.angle));
+	
+	// Immediately set velocity if thrust.acceleration is -1
+	if(this.thrust_acceleration == -1)
+		this.velocity = new b2Vec2(-options.velocity_max*Math.cos(options.angle)+inherit_velocity.x, -options.velocity_max*Math.sin(options.angle)+inherit_velocity.y);
 	
 	
 	this.id = GSSProjectile.id;
@@ -91,6 +108,23 @@ GSSProjectile.prototype = {
 		if(this.mark_for_delete)
 			return;
 		
+		var velocity_current = this.projectile_body.GetLinearVelocity(),
+		angle_current = this.projectile_body.GetAngle(),
+		x_force = -this.thrust_acceleration*Math.cos(angle_current)/GSS.FPS,
+		y_force = -this.thrust_acceleration*Math.sin(angle_current)/GSS.FPS;
+		console.log(velocity_current.length, this.homing, x_force, y_force);
+		window.velocity = velocity_current;
+		if(!this.homing)
+		{
+			if(velocity_current.Length() < this.velocity_max)
+			{
+				console.log(x_force, y_force);
+				this.projectile_body.ApplyForceToCenter(new b2Vec2(x_force, y_force), true);
+			}
+		}
+		
+		
+		// Update mesh position
 		this.mesh_plane.position.x = this.projectile_body.GetPosition().x*GSS.PTM;
 		this.mesh_plane.position.y = this.projectile_body.GetPosition().y*GSS.PTM;
 		this.mesh_plane.rotation.z = this.projectile_body.GetAngle();

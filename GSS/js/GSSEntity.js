@@ -66,7 +66,7 @@ function GSSEntity(index, options) {
 	{
 		this.weapons.push(clone(options.weapons[i]));
 	}
-	console.log('before', options.weapons);
+
 	for(var w = 0; w < this.weapons.length; w++)
 	{
 		var weapon_data = clone(GSS.weapon_data[this.weapons[w].weapon_id]);
@@ -75,7 +75,7 @@ function GSSEntity(index, options) {
 			weapon_data.faction_id = this.faction;
 			this.weapons[w].weapon = new GSSWeapon(this, weapon_data);
 	}
-	console.log('after', options.weapons);
+
 	this.power_max = options.power_max;
 	this.power_current = this.power_max;
 	this.power_regen = options.power_regen;
@@ -108,9 +108,15 @@ function GSSEntity(index, options) {
 	this.texture.needsUpdate = true;
 	this.material = new THREE.MeshBasicMaterial({map: this.texture, wireframe: false, transparent: true});
 	this.material.side = THREE.DoubleSide;
-
+	this.material.shading = THREE.FlatShading;
 	this.mesh_plane = new THREE.Mesh(new THREE.PlaneGeometry(this.three_data.width/this.body_image_data.frames, this.three_data.height), this.material);
 	GSS.scene.add(this.mesh_plane);
+	
+	this.damage_delay = 50;
+	this.damage_next = Date.now();
+	this.damage_effect = false;
+	this.damage_scale = 2;
+	this.damage_color = 0xff0000;
 	// END: THREE.js
 	
 	// BEGIN: liquidfun
@@ -167,6 +173,16 @@ GSSEntity.prototype = {
 		angle = angle < 0 ? angle+(2*Math.PI) : angle;
 		
 		return angle;
+	},
+	damage: function(damage){
+		if(this.damage_effect)
+			return;
+		
+		this.damage_effect = true;
+		this.damage_next = this.damage_delay+Date.now();
+		this.material.color = new THREE.Color("hsl(0, 100%, 80%)");
+		this.mesh_plane.scale.x = this.damage_scale;
+		this.mesh_plane.scale.y = this.damage_scale;
 	},
 	destroy: function(){
 		if(this.mark_for_delete)
@@ -373,6 +389,15 @@ GSSEntity.prototype = {
 			this.frame_current = 0;
 			this.mesh_plane.material.map.offset.x = 1-(this.three_data.width*(1/(0+1)))/this.three_data.width;
 		}
+		
+		if(this.material.color.getHex() != 0xffffff && Date.now() > this.damage_next)
+		{
+			this.material.color = new THREE.Color("rgb(255, 255, 255)");
+			this.damage_effect = false;
+		}
+		
+		this.mesh_plane.scale.x = this.mesh_plane.scale.x > 1 ? this.mesh_plane.scale.x-0.10 : 1;
+		this.mesh_plane.scale.y = this.mesh_plane.scale.y > 1 ? this.mesh_plane.scale.y-0.10 : 1;
 		
 		this.mesh_plane.position.x = this.entity_body.GetPosition().x*GSS.PTM;
 		this.mesh_plane.position.y = this.entity_body.GetPosition().y*GSS.PTM; 
