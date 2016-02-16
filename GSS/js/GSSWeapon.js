@@ -11,7 +11,7 @@ GSSProjectile.defaults = {
 	thrust_acceleration: -1,
 	thrust_deceleration: -1,
 	velocity_max: 50,
-	velocity_initial: 10,
+	velocity_initial: 50,
 	velocity_inherit: true,
 	homing: false, 
 	homing_radius: 0, 
@@ -49,18 +49,18 @@ function GSSProjectile(GSSEntity_parent, options) {
 	// Important look at this later.
 	
 	this.velocity_initial = new b2Vec2(-options.velocity_initial*Math.cos(options.angle), -options.velocity_initial*Math.sin(options.angle));
-	var offset_velocity = new b2Vec2(0,0);
-	b2Vec2.Add(offset_velocity, this.velocity_initial, (this.velocity_inherit ? this.parent.entity_body.GetLinearVelocity() : new b2Vec2(0, 0)));
+	var offset_velocity = this.parent.entity_body.GetLinearVelocity();
+	//b2Vec2.Add(offset_velocity, this.velocity_initial, (this.velocity_inherit ? this.parent.entity_body.GetLinearVelocity() : new b2Vec2(0, 0)));
+	var scalar = (this.velocity_initial.x*offset_velocity.x+this.velocity_initial.y*offset_velocity.y)/Math.pow(this.velocity_initial.Length(), 2);
+	console.log((this.velocity_initial.x*offset_velocity.x+this.velocity_initial.y*offset_velocity.y)/Math.pow(this.velocity_initial.Length(), 2));
+	b2Vec2.MulScalar(offset_velocity, this.velocity_initial, scalar < 0 ? 0 : scalar);
 	
-	if(offset_velocity.Length() < this.velocity_initial.Length())
-	{
-		b2Vec2.Normalize(offset_velocity, offset_velocity);
-		b2Vec2.MulScalar(offset_velocity, offset_velocity, -options.velocity_initial);
-	}
+	b2Vec2.Add(offset_velocity, offset_velocity, this.velocity_initial);
+
 	
 	// Immediately set velocity if thrust.acceleration is -1
 	if(this.thrust_acceleration == -1)
-		this.velocity = this.velocity_initial;
+		this.velocity = offset_velocity;
 	
 	
 	this.id = GSSProjectile.id;
@@ -120,7 +120,7 @@ GSSProjectile.prototype = {
 		angle_current = this.projectile_body.GetAngle(),
 		x_force = -this.thrust_acceleration*Math.cos(angle_current)/GSS.FPS,
 		y_force = -this.thrust_acceleration*Math.sin(angle_current)/GSS.FPS;
-		console.log(velocity_current.length, this.homing, x_force, y_force);
+		//console.log(velocity_current.length, this.homing, x_force, y_force);
 		window.velocity = velocity_current;
 		if(!this.homing)
 		{
