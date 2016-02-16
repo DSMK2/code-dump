@@ -1,3 +1,0 @@
-/*
-This object is used to emit projectiles and stuff
-*/
