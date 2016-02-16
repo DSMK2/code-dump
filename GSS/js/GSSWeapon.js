@@ -8,11 +8,11 @@ GSSProjectile.defaults = {
 	angle: 0, 
 	x: 0, 
 	y: 0, 
-	thrust_acceleration: 0.5,
+	thrust_acceleration: -1,
 	thrust_deceleration: -1,
 	velocity_max: 50,
-	velocity_initial: 1,
-	velocity_inherit: false,
+	velocity_initial: 10,
+	velocity_inherit: true,
 	homing: false, 
 	homing_radius: 0, 
 	lifetime: 1000,
@@ -46,13 +46,21 @@ function GSSProjectile(GSSEntity_parent, options) {
 	this.velocity_max = options.velocity_max;
 	this.velocity_inherit = options.velocity_inherit;
 	
-	var inherit_velocity = this.velocity_inherit ? this.parent.entity_body.GetLinearVelocity() : new b2Vec2(0, 0);
+	// Important look at this later.
 	
-	this.velocity = new b2Vec2(-options.velocity_initial*Math.cos(options.angle), -options.velocity_initial*Math.sin(options.angle));
+	this.velocity_initial = new b2Vec2(-options.velocity_initial*Math.cos(options.angle), -options.velocity_initial*Math.sin(options.angle));
+	var offset_velocity = new b2Vec2(0,0);
+	b2Vec2.Add(offset_velocity, this.velocity_initial, (this.velocity_inherit ? this.parent.entity_body.GetLinearVelocity() : new b2Vec2(0, 0)));
+	
+	if(offset_velocity.Length() < this.velocity_initial.Length())
+	{
+		b2Vec2.Normalize(offset_velocity, offset_velocity);
+		b2Vec2.MulScalar(offset_velocity, offset_velocity, -options.velocity_initial);
+	}
 	
 	// Immediately set velocity if thrust.acceleration is -1
 	if(this.thrust_acceleration == -1)
-		this.velocity = new b2Vec2(-options.velocity_max*Math.cos(options.angle)+inherit_velocity.x, -options.velocity_max*Math.sin(options.angle)+inherit_velocity.y);
+		this.velocity = this.velocity_initial;
 	
 	
 	this.id = GSSProjectile.id;
@@ -116,7 +124,7 @@ GSSProjectile.prototype = {
 		window.velocity = velocity_current;
 		if(!this.homing)
 		{
-			if(velocity_current.Length() < this.velocity_max)
+			if(this.thrust_acceleration != -1 && velocity_current.Length() < this.velocity_max)
 			{
 				console.log(x_force, y_force);
 				this.projectile_body.ApplyForceToCenter(new b2Vec2(x_force, y_force), true);
