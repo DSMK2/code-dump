@@ -6,10 +6,7 @@ var material
 var mesh;
 var light;
 
-init();
-animate();
-
-function init() {
+function init(target) {
 
 	scene = new THREE.Scene();
 
@@ -29,7 +26,7 @@ function init() {
 	scene.background
 
 	renderer = new THREE.WebGLRenderer({
-		canvas: document.getElementById('canvas')
+		canvas: target
 	});
 	renderer.setClearColor(0xdddddd, 1);
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -45,3 +42,6 @@ function animate() {
 	renderer.render( scene, camera );
 
 }
+
+init(document.getElementById('canvas1'));
+animate();
