@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>DSCarousel Testing Groudns</title>
+		<meta charset="utf-8">
+	</head>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenMax.min.js"></script>
+
+	<script src="DSCarousel.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			console.log('loaded');
+
+			var carousel = new Conveyor(document.querySelector('.carousel'));
+
+			// TweenMax.to(document.querySelector('.carousel'), 10, {rotationY: '-360deg', ease: Power0.easeNone, repeat: -1});
+
+			/*
+			setInterval(function() {
+				carousel.next();
+			}, 1000);
+			*/
+
+					[].slice.call(document.querySelectorAll('ul.controls li'), 0).forEach(function(element) {
+						console.log(element);
+						element.addEventListener('click', function(e) {
+							e.preventDefault();
+
+							if (this.classList.contains('prev')) {
+								console.log('previous');
+								carousel.previous();
+							} else if (this.classList.contains('next')) {
+								console.log('next');
+								carousel.next();
+							}
+						});
+					});
+			console.log(carousel);
+		});
+	</script>
+	<style>
+		body, html {
+			margin: 0;
+			padding: 0;
+			background-color: #8b8e89;
+			min-width: 100vw;
+			min-height: 100vh;
+			overflow: hidden;
+		}
+
+		body {
+			display: table;
+		}
+
+		body > .container {
+			display: table-cell;
+			vertical-align: middle;
+			text-align: center;
+		}
+
+		div.carousel {
+			position: relative;
+			width: 500px;
+			height: 500px;
+			white-space: nowrap;
+			margin: 0px auto;
+			transform-style: preserve-3d;
+		}
+
+
+		div.carousel > div {
+			width: 100%;
+			height: 100%;
+			background-color: #fff;
+			color: #000;
+			position: absolute;
+			top: 0;
+			left: 0;
+			backface-visibility: hidden;
+			webkit-backface-visibility: hidden;
+		}
+
+		div.carousel > div:first-child {
+			position: relative;
+		}
+
+		div.carousel > div:nth-child(2n) {
+			background-color: #000;
+			color: #fff;
+		}
+
+		ul.controls {
+			padding: 0;
+		}
+
+		ul.controls::after {
+			content: ' ';
+			width: 100%;
+			display: block;
+			clear: both;
+		}
+
+		ul.controls li {
+			list-style: none;
+			padding: 0;
+			float: left;
+			width: 50%;
+		}
+
+		ul.controls li button {
+			width: 100%;
+		}
+	</style>
+<body>
+	<div class="container">
+		<div class="carousel">
+			<div>A</div>
+			<div>B</div>
+			<div>C</div>
+			<div>D</div>
+			<div>E</div>
+			<div>F</div>
+			<div>G</div>
+			<div>H</div>
+			<div>I</div>
+			<div>J</div>
+		</div>
+		<ul class="controls">
+			<li class="next"><button>NEXT</button></li>
+			<li class="prev"><button>PREV</button></li>
+		</ul>
+	</div>
+</body>
+</html>
