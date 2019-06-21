@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>DSCarousel Testing Groudns</title>
+		<title>DSCarousel Testing Grounds</title>
 		<meta charset="utf-8">
 	</head>
 
@@ -14,8 +14,8 @@
 
 			var carousel = new Conveyor(document.querySelector('.carousel'));
 
-			// TweenMax.to(document.querySelector('.carousel'), 10, {rotationY: '-360deg', ease: Power0.easeNone, repeat: -1});
-
+			TweenMax.to(document.querySelector('.carousel'), 10, {rotationY: '-360deg', ease: Power0.easeNone, repeat: -1});
+			TweenMax.to(document.querySelector('.container'), 10, {rotationX: '-360deg', ease: Power0.easeNone, repeat: -1});
 			/*
 			setInterval(function() {
 				carousel.next();
@@ -25,6 +25,8 @@
 					[].slice.call(document.querySelectorAll('ul.controls li'), 0).forEach(function(element) {
 						console.log(element);
 						element.addEventListener('click', function(e) {
+							var newElement;
+
 							e.preventDefault();
 
 							if (this.classList.contains('prev')) {
@@ -33,6 +35,12 @@
 							} else if (this.classList.contains('next')) {
 								console.log('next');
 								carousel.next();
+							} else if (this.classList.contains('add')) {
+								newElement = document.createElement('div');
+								newElement.innerHTML = Date.now();
+								carousel.carousel.append(newElement);
+							} else if (this.classList.contains('remove')) {
+								carousel.carousel.removeChild(carousel.carousel.querySelector(':last-child'));
 							}
 						});
 					});
@@ -57,6 +65,7 @@
 			display: table-cell;
 			vertical-align: middle;
 			text-align: center;
+			transform-style: preserve-3d;
 		}
 
 		div.carousel {
@@ -77,8 +86,10 @@
 			position: absolute;
 			top: 0;
 			left: 0;
+			/*
 			backface-visibility: hidden;
 			webkit-backface-visibility: hidden;
+			*/
 		}
 
 		div.carousel > div:first-child {
@@ -92,20 +103,15 @@
 
 		ul.controls {
 			padding: 0;
-		}
-
-		ul.controls::after {
-			content: ' ';
-			width: 100%;
-			display: block;
-			clear: both;
+			display: flex;
+			justify-content: center;
+			z-index:100;
+			transform: translateZ(10px);
 		}
 
 		ul.controls li {
 			list-style: none;
 			padding: 0;
-			float: left;
-			width: 50%;
 		}
 
 		ul.controls li button {
@@ -120,15 +126,12 @@
 			<div>C</div>
 			<div>D</div>
 			<div>E</div>
-			<div>F</div>
-			<div>G</div>
-			<div>H</div>
-			<div>I</div>
-			<div>J</div>
 		</div>
 		<ul class="controls">
 			<li class="next"><button>NEXT</button></li>
 			<li class="prev"><button>PREV</button></li>
+			<li class="add"><button>ADD</button></li>
+			<li class="remove"><button>REMOVE</button></li>
 		</ul>
 	</div>
 </body>
