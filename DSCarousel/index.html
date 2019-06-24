@@ -12,7 +12,7 @@
 		document.addEventListener('DOMContentLoaded', function() {
 			console.log('loaded');
 			var DOMCarousel = document.querySelector('.carousel');
-			var dscarousel = new DSCarousel(DOMCarousel, {GSAP: true, GSAPEase: Elastic.easeOut.config(1, 0.5)});
+			var dscarousel = new DSCarousel(DOMCarousel, {axis: 'vertical', GSAP: true, GSAPEase: Elastic.easeOut.config(1, 0.5)});
 
 			//TweenMax.to(document.querySelector('.carousel'), 10, {rotationY: '-360deg', ease: Power0.easeNone, repeat: -1});
 			/*
@@ -45,7 +45,6 @@
 							}
 						});
 					});
-			console.log(carousel);
 		});
 	</script>
 	<style>
@@ -107,7 +106,7 @@
 			display: flex;
 			justify-content: center;
 			z-index:100;
-			transform: translateZ(10px);
+			transform: translateZ(1000px);
 		}
 
 		ul.controls li {

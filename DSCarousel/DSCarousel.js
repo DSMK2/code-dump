@@ -81,30 +81,26 @@ DSCarousel.events = {
 };
 
 DSCarousel.prototype = {
-  // Used to update state of carousel based on the carousel's transform: rotateY;
-  update: function() {
-    // Implement
-  },
   goto: function(slide) {
     var _this = this;
     var deltaSlide = slide - this.currentSlide;
     var axis = this.axis === 'horizontal' ? 'Y' : 'X';
-
+    var from = {};
+    var to = {};
     if (this.options.GSAP) {
       if (!this.timeline.isActive()) {
-        this.timeline.fromTo(this.DOMTarget, this.options.GSAPDuration, {
-          rotationY: -this.currentSlide * this.angleIncrement
-        }, {
-          rotationY: -(this.currentSlide + deltaSlide) * this.angleIncrement,
-          ease: this.options.GSAPEase,
-          onComplete: function() {
-            _this.DOMTarget.dispatchEvent(DSCarousel.events.progress, {detail: {
-              currentSlide: this.currentSlide + deltaSlide,
-              prevSlide: this.currentSlide,
-              deltaSlide: deltaSlide
-            }});
-          }
-        });
+        from['rotation' + axis] = (axis === 'Y' ? 1 : -1) * -this.currentSlide * this.angleIncrement;
+        to['rotation' + axis] = (axis === 'Y' ? 1 : -1) * -(this.currentSlide + deltaSlide) * this.angleIncrement;
+        to.ease = this.options.GSAPEase;
+        to.onComplete = function() {
+          _this.DOMTarget.dispatchEvent(DSCarousel.events.progress, {detail: {
+            currentSlide: this.currentSlide + deltaSlide,
+            prevSlide: this.currentSlide,
+            deltaSlide: deltaSlide
+          }});
+        };
+
+        this.timeline.fromTo(this.DOMTarget, this.options.GSAPDuration, from, to);
         this.currentSlide += deltaSlide;
       }
     } else {
@@ -119,7 +115,8 @@ DSCarousel.prototype = {
   previous: function() {
     this.goto(this.currentSlide - 1);
   },
-  build: function() {
+  // TODO: Implement dry run results
+  build: function(dry) {
     var _this = this;
     var largestSize = 0;
     var RAD2DEG = Math.PI / 180;
@@ -155,5 +152,21 @@ DSCarousel.prototype = {
       newSlides: this.slides.slice(0),
       oldSlides: oldSlides
     }});
+  },
+  // Gets the current angle on the current axis and updates currentSlide to match
+  update: function() {
+    var axis = this.axis === 'horizontal' ? 'Y' : 'X';
+    var transform = this.DOMTarget.style.transform;
+    var regExpResultRotate = (new RegExp('rotate' + axis + '\\((.*)deg\\)')).exec(transform); // Capture group for rotateY
+    var regExpResultMatrix = /matrix3d\((.*)\)/.exec(transform); // Capture Group for matrix3D
+    var estimatedSlide = -1;
+
+    if (regExpResultRotate !== null) {
+      estimatedSlide = Math.floor(parseFloat(regExpResultRotate[1]) / this.angleIncrement);
+    } else if (regExpResultMatrix !== null) {
+      // TODO: Get different matrix positions based on matrix...
+    } else {
+      return estimatedSlide;
+    }
   }
 };
