@@ -11,11 +11,10 @@
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			console.log('loaded');
+			var DOMCarousel = document.querySelector('.carousel');
+			var dscarousel = new DSCarousel(DOMCarousel, {GSAP: true, GSAPEase: Elastic.easeOut.config(1, 0.5)});
 
-			var carousel = new Conveyor(document.querySelector('.carousel'));
-
-			TweenMax.to(document.querySelector('.carousel'), 10, {rotationY: '-360deg', ease: Power0.easeNone, repeat: -1});
-			TweenMax.to(document.querySelector('.container'), 10, {rotationX: '-360deg', ease: Power0.easeNone, repeat: -1});
+			//TweenMax.to(document.querySelector('.carousel'), 10, {rotationY: '-360deg', ease: Power0.easeNone, repeat: -1});
 			/*
 			setInterval(function() {
 				carousel.next();
@@ -31,16 +30,18 @@
 
 							if (this.classList.contains('prev')) {
 								console.log('previous');
-								carousel.previous();
+								dscarousel.previous();
 							} else if (this.classList.contains('next')) {
 								console.log('next');
-								carousel.next();
+								dscarousel.next();
 							} else if (this.classList.contains('add')) {
 								newElement = document.createElement('div');
 								newElement.innerHTML = Date.now();
-								carousel.carousel.append(newElement);
+								DOMCarousel.append(newElement);
+								dscarousel.build();
 							} else if (this.classList.contains('remove')) {
-								carousel.carousel.removeChild(carousel.carousel.querySelector(':last-child'));
+								DOMCarousel.removeChild(DOMCarousel.querySelector(':last-child'));
+								dscarousel.build();
 							}
 						});
 					});
