@@ -9,10 +9,12 @@
 
 	<script src="DSCarousel.js"></script>
 	<script>
+
 		document.addEventListener('DOMContentLoaded', function() {
 			console.log('loaded');
 			var DOMCarousel = document.querySelector('.carousel');
-			var dscarousel = new DSCarousel(DOMCarousel, {axis: 'horizontal', GSAP: true, GSAPEase: Elastic.easeOut.config(1, 0.5)});
+			var dscarousel;
+			var timeline;
 
 			//TweenMax.to(document.querySelector('.carousel'), 10, {rotationY: '-360deg', ease: Power0.easeNone, repeat: -1});
 			/*
@@ -20,77 +22,80 @@
 				carousel.next();
 			}, 1000);
 			*/
+			DOMCarousel.addEventListener('DSCarousel.build', function(e) {
+				console.log('Built', e.dscarousel);
 
-					[].slice.call(document.querySelectorAll('ul.controls li'), 0).forEach(function(element) {
-						console.log(element);
-						element.addEventListener('click', function(e) {
-							var newElement;
-							var results;
-							var timeline;
-							e.preventDefault();
+			});
 
-							if (this.classList.contains('prev')) {
-								console.log('previous');
-								dscarousel.previous();
-							} else if (this.classList.contains('next')) {
-								console.log('next');
-								dscarousel.next();
-							} else if (this.classList.contains('add')) {
-								newElement = document.createElement('div');
-								newElement.innerHTML = Date.now();
-								DOMCarousel.append(newElement);
+			[].slice.call(document.querySelectorAll('ul.controls li'), 0).forEach(function(element) {
+				console.log(element);
+				element.addEventListener('click', function(e) {
+					var newElement;
+					var results;
+					e.preventDefault();
 
-
-								results = dscarousel.build(true);
-
-								if (typeof results !== 'undefined') {
-									timeline = new TimelineMax();
-
-									results.slides.forEach(function(slide) {
-										var animationProps = {};
-										animationProps['rotation' + slide.axis] = slide.angle + 'deg';
-										animationProps.z = slide.magnitude + 'px';
-
-										timeline.to(slide.DOMElement, 1, {transform: slide.transformCSS}, '0');
-									});
-									var animationProps = {};
-									console.log(results);
-
-									animationProps['rotation' + results.dscarousel.axis] = results.dscarousel.angle + 'deg';
-									timeline.to(DOMCarousel, 1, {rotateY: results.dscarousel.angle}, '0');
-
-									timeline.add(function() {
-										dscarousel.build();
-									});
-								}
+					if (this.classList.contains('prev')) {
+						console.log('previous');
+						dscarousel.previous();
+					} else if (this.classList.contains('next')) {
+						console.log('next');
+						dscarousel.next();
+					} else if (this.classList.contains('add')) {
+						timeline = new TimelineMax();
+						newElement = document.createElement('div');
+						newElement.innerHTML = Date.now();
+						DOMCarousel.append(newElement);
 
 
-								//dscarousel.build();
-							} else if (this.classList.contains('remove')) {
-								DOMCarousel.removeChild(DOMCarousel.querySelector(':last-child'));
-								results = dscarousel.build(true);
+						results = dscarousel.build(true);
 
-								if (typeof results !== 'undefined') {
-									timeline = new TimelineMax();
-									results.slides.forEach(function(slide) {
-										var animationProps = {};
-										animationProps['rotation' + slide.axis] = slide.angle + 'deg';
-										animationProps.z = slide.magnitude + 'px';
+						if (typeof results !== 'undefined') {
 
-										timeline.to(slide.DOMElement, 1, {transform: slide.transformCSS}, '0');
-									});
-									var animationProps = {};
-									animationProps['rotation' + results.dscarousel.axis] = results.dscarousel.angle + 'deg';
-									console.log(results);
-									timeline.to(results.dscarousel.DOMElement, 1, {rotationY: results.dscarousel.angle}, '0');
-									timeline.add(function() {
-										dscarousel.build();
-									});
-								}
-							}
-						});
-					});
-		});
+							results.slides.forEach(function(slide) {
+								var animationProps = {};
+								animationProps['rotation' + slide.axis] = slide.angle + '_short';
+								animationProps.z = slide.magnitude * Math.cos(slide.angle * Math.PI/180) + 'px';
+								animationProps.x = slide.magnitude * Math.sin(slide.angle * Math.PI/180) + 'px';
+								animationProps.ease = Elastic.easeOut.config(1, 0.5);
+								timeline.to(slide.DOMElement, 1, animationProps, '0');
+							});
+
+							timeline.to(DOMCarousel, 1, {rotationY: -results.dscarousel.angleNew + '_short'}, '0');
+							timeline.add(function() {
+								dscarousel.build();
+							});
+						}
+
+
+						//dscarousel.build();
+					} else if (this.classList.contains('remove')) {
+						timeline = new TimelineMax();
+						DOMCarousel.removeChild(DOMCarousel.querySelector(':last-child'));
+						results = dscarousel.build(true);
+
+						if (typeof results !== 'undefined') {
+							results.slides.forEach(function(slide) {
+								var animationProps = {};
+								animationProps['rotation' + slide.axis] = slide.angle + '_short';
+								animationProps.z = slide.magnitude * Math.cos(slide.angle * Math.PI/180) + 'px';
+								animationProps.x = slide.magnitude * Math.sin(slide.angle * Math.PI/180) + 'px';
+								animationProps.ease = Elastic.easeOut.config(1, 0.5);
+
+								timeline.to(slide.DOMElement, 1, animationProps, '0');
+							});
+
+							timeline.to(results.dscarousel.DOMElement, 1, {rotationY: -results.dscarousel.angleNew + '_short'}, '0');
+							timeline.add(function() {
+								dscarousel.build();
+							});
+						}
+					}
+				});
+			});
+
+			var dscarousel = new DSCarousel(DOMCarousel, {axis: 'horizontal', GSAP: true, GSAPEase: Elastic.easeOut.config(1, 0.5)});
+
+	});
 	</script>
 	<style>
 		body, html {
@@ -172,6 +177,7 @@
 			<div>C</div>
 			<div>D</div>
 			<div>E</div>
+			<div style="display: none;">G</div>
 		</div>
 		<ul class="controls">
 			<li class="next"><button>NEXT</button></li>
