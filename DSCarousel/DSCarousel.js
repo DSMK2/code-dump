@@ -162,7 +162,7 @@ DSCarousel.prototype = {
     dryRun = typeof dryRun !== 'boolean' ? false : dryRun;
 
     // Get immediate children
-    newSlides = [].slice.call(this.DOMTarget.children, 0);
+    newSlides = [...this.DOMTarget.children];
 
     // Only take visible slides into consideration
     newSlides = newSlides.filter(function(element) {
