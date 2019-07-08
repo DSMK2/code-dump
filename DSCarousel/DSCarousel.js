@@ -1,7 +1,6 @@
 /* eslint complexity: "off" */
 /* global TimelineMax */
 /* Todo: Implement an update thingo? */
-
 function matrixMultiplication(multiplicand, multiplier) {
   var result = [];
   var sum = 0;
